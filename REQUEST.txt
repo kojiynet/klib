@@ -1,0 +1,13 @@
+
+Request from Author
+About "klib"
+
+Koji Yamamoto a.k.a. utilcraft
+
+Over and above the legal restrictions imposed by the LICENSE, if you use this software for your interest including profitable activities and academic publications, then you are requested to provide proper attribution.
+
+Suggested Citation:
+Yamamoto, Koji. 2019. "klib." github.com/kojiynet/klib (Retrieved Oct 20, 2019).
+
+Suggested Acknowledgment:
+We used "klib" (github.com/kojiynet/klib, retrieved Oct 20, 2019), which has been developed by Koji Yamamoto.
