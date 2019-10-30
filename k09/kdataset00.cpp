@@ -50,6 +50,7 @@ class Datacolumn;
 
 //int countPrec( const std::string &);
 //bool isInteger( const std::string &);
+
 bool effectiveDigits( int &, int &, const std::string &);
 
 namespace { // Used only inside this file
@@ -207,6 +208,8 @@ public:
 
 /* ********** Function Definitions ********** */
 
+/* ここからやる。。 */
+
 /*
 	strに含まれている浮動小数点数表現（10進数）について、
 	有効桁を10進数でどの位からどの位までかで表す。
@@ -218,6 +221,17 @@ public:
 	仮にstrが"8030000"なら、larged==6, smalld==4になる。
 	有効な数値が入っていなければfalseを返す。
 */
+/**
+ * @fn bool effectiveDigits( int &larged, int &smalld, const std::string &str)
+ * @brief 
+ * 浮動小数点数表現の有効桁の範囲を識別する。
+ * Identify largest/smallest effective digits of floating point numeric expression
+ * @param (str) 識別対象となる浮動小数点数表現（10進数）の文字列
+ * @param (引数名) 引数の説明
+ * @return 戻り値の説明
+ * @sa 参照すべき関数を書けばリンクが貼れる
+ * @detail 詳細な説明
+ */
 bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 {
 	
@@ -360,8 +374,7 @@ bool localStoI( int &ret, const std::string &str)
 	return true;
 	
 }
-}
-
+} // end namespace
 
 /* ********** Definitions of Member Functions ********** */
 
