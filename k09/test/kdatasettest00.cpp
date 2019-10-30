@@ -13,9 +13,10 @@
 
 /* ********** Preprocessor Directives ********** */
 
+// define this syboml to make "printTest()" available
 #define kdataset_cpp_test
-
-#include <k09/kdataset00.cpp>
+	#include <k09/kdataset00.cpp>
+#undef kdataset_cpp_test
 
 #include <iostream> 
 
@@ -34,6 +35,9 @@ using namespace std;
 /* ********** Function Declarations ********** */
 
 int main( int, char *[]);
+void testEffectiveDigits( void);
+void testDatacolumn( void);
+void testDataset( void);
 
 
 /* ********** Class Definitions ********** */
@@ -50,89 +54,28 @@ int main( int, char *[]);
 int main( int, char *[])
 {
 	
-	vector <string> svec;
-	int nmisret;
+	testEffectiveDigits();
+
+	testDatacolumn();
+		
+	testDataset();
+
+	// Datasetに、
+	// printの類が未実装。
+	// あと明示的にファイルに書き出すものもつくる。
 	
-	svec.clear();
-	svec.push_back( "123");
-	svec.push_back( "456.78");
-	svec.push_back( "-0.0912300e-12");
-	svec.push_back( "   456.78   ");
+}
+
+void testEffectiveDigits( void)
+{
 	
-	Datacolumn dc;
-	
-	dc.setData( "Var1", svec);
-	dc.print();
-	cout << endl;
-	
-	bool b = dc.convertToNumeric( nmisret);
-	cout << "return value of convertToNumeric( nmisret): " << b << endl;
-	cout << "\"nmisret\" of convertToNumeric( nmisret): " << nmisret << endl;
-	dc.print();
-	cout << endl;
-	
-	
-	// integer example
-	
-	svec.clear();
-	svec.push_back( "123");
-	svec.push_back( "456.78E2");
-	svec.push_back( "-0.0912300e+5");
-	svec.push_back( "   45678   ");
-	
-	dc.setData( "Var2", svec);
-	dc.print();
-	cout << endl;
-	
-	b = dc.convertToNumeric( nmisret);
-	cout << "return value of convertToNumeric( nmisret): " << b << endl;
-	cout << "\"nmisret\" of convertToNumeric( nmisret): " << nmisret << endl;
-	dc.print();
-	cout << endl;
-	
-	
-	// missing example 1
-	
-	svec.clear();
-	svec.push_back( "123");
-	svec.push_back( ".");
-	svec.push_back( "");
-	svec.push_back( "      ");
-	svec.push_back( "-0.0912300e+5");
-	
-	dc.setData( "Var3", svec);
-	dc.print();
-	cout << endl;
-	
-	b = dc.convertToNumeric( nmisret);
-	cout << "return value of convertToNumeric( nmisret): " << b << endl;
-	cout << "\"nmisret\" of convertToNumeric( nmisret): " << nmisret << endl;
-	dc.print();
-	cout << endl;
-	
-	// missing example 2
-	
-	svec.clear();
-	svec.push_back( "\t");
-	svec.push_back( ".");
-	svec.push_back( "");
-	svec.push_back( "      ");
-	svec.push_back( " \t ");
-	
-	dc.setData( "Var4", svec);
-	dc.print();
-	cout << endl;
-	
-	b = dc.convertToNumeric( nmisret);
-	cout << "return value of convertToNumeric( nmisret): " << b << endl;
-	cout << "\"nmisret\" of convertToNumeric( nmisret): " << nmisret << endl;
-	dc.print();
-	cout << endl;
-	
-	
+	cout << endl
+	     << "***** Testing \"effectiveDigits()\" function *****" << endl
+		 << endl;
+
 	/*
 	
-	// 以下はeffectiveDigits()用のテストプログラムに入れる？
+	// 以下をeffectiveDigits()用のテストプログラムに入れていく。
 	
 	string str;
 	int ld, sd;
@@ -170,8 +113,104 @@ int main( int, char *[])
 	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	*/ 
+
+}
+
+void testDatacolumn( void)
+{
+
+	vector <string> svec;
+	int nmisret;
+	Datacolumn dc;
 	
+	cout << endl
+	     << "***** Testing \"Datacolumn\" class *****" << endl
+		 << endl;
+
+	svec.clear();
+	svec.push_back( "123");
+	svec.push_back( "456.78");
+	svec.push_back( "-0.0912300e-12");
+	svec.push_back( "   456.78   ");
+	
+	dc.setData( "Var1", svec);
+	dc.print();
+	cout << endl;
+	
+	bool b = dc.convertToNumeric( nmisret);
+	cout << "return value of convertToNumeric( nmisret): " << b << endl;
+	cout << "\"nmisret\" after convertToNumeric( nmisret): " << nmisret << endl
+	     << "Note: this \"nmisret\" stands for N of missing cases." << endl;
+	cout << endl;
+
+	dc.print();
+	cout << endl;
+	
+	
+	// integer example
+	
+	svec.clear();
+	svec.push_back( "123");
+	svec.push_back( "456.78E2");
+	svec.push_back( "-0.0912300e+5");
+	svec.push_back( "   45678   ");
+	
+	dc.setData( "Var2", svec);
+	dc.print();
+	cout << endl;
+	
+	b = dc.convertToNumeric( nmisret);
+	cout << "return value of convertToNumeric( nmisret): " << b << endl;
+	cout << "\"nmisret\" after convertToNumeric( nmisret): " << nmisret << endl;
+	dc.print();
+	cout << endl;
+	
+	
+	// missing example 1
+	
+	svec.clear();
+	svec.push_back( "123");
+	svec.push_back( ".");
+	svec.push_back( "");
+	svec.push_back( "      ");
+	svec.push_back( "-0.0912300e+5");
+	
+	dc.setData( "Var3", svec);
+	dc.print();
+	cout << endl;
+	
+	b = dc.convertToNumeric( nmisret);
+	cout << "return value of convertToNumeric( nmisret): " << b << endl;
+	cout << "\"nmisret\" after convertToNumeric( nmisret): " << nmisret << endl;
+	dc.print();
+	cout << endl;
+	
+	// missing example 2
+	
+	svec.clear();
+	svec.push_back( "\t");
+	svec.push_back( ".");
+	svec.push_back( "");
+	svec.push_back( "      ");
+	svec.push_back( " \t ");
+	
+	dc.setData( "Var4", svec);
+	dc.print();
+	cout << endl;
+	
+	b = dc.convertToNumeric( nmisret);
+	cout << "return value of convertToNumeric( nmisret): " << b << endl;
+	cout << "\"nmisret\" after convertToNumeric( nmisret): " << nmisret << endl;
+	dc.print();
+	cout << endl;
+
+}
+
+void testDataset( void)
+{
+
 	Dataset ds;
+	bool b;
 	
 	string fn = "kdataset_test.csv";
 	b = ds.readCsvFile( fn);
@@ -234,10 +273,7 @@ int main( int, char *[])
 	ds.setTitle( "Sample Dataset");
 	ds.print();
 	cout << endl;
-	
-	// printの類が未実装。
-	// あと明示的にファイルに書くものもつくる。
-	
+
 }
 
 
