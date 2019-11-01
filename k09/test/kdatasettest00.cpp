@@ -56,9 +56,9 @@ int main( int, char *[])
 	
 	testEffectiveDigits();
 
-	testDatacolumn();
+//	testDatacolumn();
 		
-	testDataset();
+//	testDataset();
 
 	// Datasetに、
 	// printの類が未実装。
@@ -73,44 +73,65 @@ void testEffectiveDigits( void)
 	     << "***** Testing \"effectiveDigits()\" function *****" << endl
 		 << endl;
 
-	/*
 	
-	// 以下をeffectiveDigits()用のテストプログラムに入れていく。
 	
 	string str;
 	int ld, sd;
+	bool b;
 	
 	str = "-1.234e+3";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
+
+	// the exponential part like the following should produce failure
+
+	str = "-1.234e+";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-1.234e-";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-1.234e";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-1.234e ";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	/*
 	
+	// 以下をeffectiveDigits()用のテストプログラムに入れていく。
+
 	str = "-123e-3";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	str = "4234.2334";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	str = "4234.00000";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	str = "40200000";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	str = "002340.0560";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	str = "0.000004020";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	str = ".004020";
 	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << b << " larged: " << ld << " smalld: " << sd << endl;
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
 	
 	*/ 
 
