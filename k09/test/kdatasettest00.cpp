@@ -82,29 +82,7 @@ void testEffectiveDigits( void)
 	str = "-1.234e+3";
 	b = effectiveDigits( ld, sd, str);
 	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
-
-	// the exponential part like the following should produce failure
-
-	str = "-1.234e+";
-	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
-
-	str = "-1.234e-";
-	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
-
-	str = "-1.234e";
-	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
-
-	str = "-1.234e ";
-	b = effectiveDigits( ld, sd, str);
-	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
-
-	/*
 	
-	// 以下をeffectiveDigits()用のテストプログラムに入れていく。
-
 	str = "-123e-3";
 	b = effectiveDigits( ld, sd, str);
 	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
@@ -132,6 +110,47 @@ void testEffectiveDigits( void)
 	str = ".004020";
 	b = effectiveDigits( ld, sd, str);
 	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
+	
+	str = "0.00";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << " larged: " << ld << " smalld: " << sd << endl;
+
+
+
+	// examples that produces failure
+
+	// the exponential part like the followings produces failure
+
+	str = "-1.234e+";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-1.234e-";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-1.234e";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-1.234e ";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	// the significand part like the followings produces failure
+
+	str = "e+3";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	str = "-e+3";
+	b = effectiveDigits( ld, sd, str);
+	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
+
+	/*
+	
+	// 以下をeffectiveDigits()用のテストプログラムに入れていく。
+
 	
 	*/ 
 

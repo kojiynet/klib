@@ -13,6 +13,8 @@
 	When functions dealing with characters,
 	they are applicable only to ASCII characters.
 	
+	文字列→数値の変換の際に、もとの桁数を保持したい。
+	その際、有効桁数が、doubleの有効桁の限界を超えていたらどうするかを考える。
 	
 	
 	k07/kdataset00.cppまでは旧版だった。
@@ -111,7 +113,7 @@ public:
 	// titleは出さない。
 	
 	#ifdef kdataset_cpp_test
-	void printTest( void); // to test
+		void printTest( void); // to test
 	#endif
 	
 };
@@ -208,47 +210,58 @@ public:
 
 /* ********** Function Definitions ********** */
 
-/* ここからやる。。 */
-
 /**
  * @brief             浮動小数点数表現の有効桁の範囲を識別する関数
- *                    (Identify largest/smallest effective digits of numeric expression)
+ *                    (Identify largest/smallest effective digits
+ *                     of numeric expression)
  * @param[in]  str    識別対象となる浮動小数点数表現（10進数）の文字列
  *                    (String to parse)
- * @param[out] laregd 有効桁のうち最大の桁が(10^larged)の桁となることを意味する
+ * @param[out] laregd 有効桁のうち最大の桁は(10^larged)の桁である
  *                    (The largest effective digit is (10^larged))
- * @param[out] smalld 有効桁のうち最小の桁が(10^smalld)の桁となることを意味する
+ * @param[out] smalld 有効桁のうち最小の桁は(10^smalld)の桁である
  *                    (The largest effective digit is (10^smalld))
  * @return bool       strが有効な数値表現で識別できたか否か
- *                    (returns book which indicate whether str is valid numeric experssion)
+ *                    (returns boolean indicating whether str is valid
+ *                     numeric experssion)
  * @retval true       strが有効な数値表現だったので識別ができた
  *                    (str is valid numeric expression)
  * @retval false      strが有効な数値表現ではなかったので識別できなかった
  *                    (str is not valid numeric expression)
  * @detail see below:
- *   strに含まれている浮動小数点数表現（10進数）について、有効桁を10進数でどの位からどの位までかで表す。
- *   有効桁のうち最大の桁が（10^larged）の桁、有効桁のうち最小の桁が（10^smalld）の桁、となるようにする。
- *   仮にstrが"-1.234e+3"なら、larged==3, smalld==0になる。
- *   仮にstrが"-123e-1"なら、larged==1, smalld==-1になる。
- *   仮にstrが"0.000004567"なら、larged==-6, smalld==-9になる。
- *   仮にstrが"8030000"なら、larged==6, smalld==4になる。
+ *   strに含まれている浮動小数点数表現（10進数）について、
+ *   有効桁を10進数でどの位からどの位までかで表す。
+ *   有効桁のうち最大の桁が（10^larged）の桁、
+ *   有効桁のうち最小の桁が（10^smalld）の桁、となるように値を入れる。
+ *   strがゼロの場合は、1の位のみの1桁の数値として扱う。
+ *     strが"-1.234e+3"なら、larged==3, smalld==0になる。
+ *     strが"-123e-1"なら、larged==1, smalld==-1になる。
+ *     strが"0.000004567"なら、larged==-6, smalld==-9になる。
+ *     strが"8030000"なら、larged==6, smalld==4になる。
+ *     strが"0.00"なら、larged==0, smalld==0になる。
  *   有効な数値が入っていなければfalseを返す。
+ *     strが"-1.234e+"なら、falseを返す。
+ *     strが"-1.234e"なら、falseを返す。
+ *     strが"e+3"なら、falseを返す。
+ *     strが"-e+3"なら、falseを返す。
  */
 bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 {
 	
-	std::string nonzerostr = "123456789";
+	static const std::string nonzerostr = "123456789";
 	
 	int size;
 	int p;
-	bool expexist; // 指数部が存在するかどうか
-	int expval; // 指数部の数値
+	int signifsize; // 実数部の長さ
+	bool expexist;   // 指数部が存在するかどうか
+	int expval;      // 指数部の数値
 	
 	bool nonzerofound; // 1～9の数値が見つかったかどうか
-	bool dotexist; // '.'が見つかったかどうか
-	int ld; // 有効数値が存在する最大の桁は10のld乗の桁
-	int sd; // 有効数値が存在する最小の桁は10のsd乗の桁
-	int curd; // 現在見ている桁は10のcurd乗の桁；これはdotexistがtrueのときのみ有効
+	bool dotexist;     // '.'が見つかったかどうか
+	bool zerofound;    // 0が見つかったかどうか
+	int ld;            // 有効数値が存在する最大の桁は10のld乗の桁
+	int sd;            // 有効数値が存在する最小の桁は10のsd乗の桁
+	int curd;          // 現在見ている桁は10のcurd乗の桁
+	                   // curdはdotexistがtrueのときのみ有効
 	
 	size = str.size();
 	
@@ -266,21 +279,32 @@ bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 	}
 	
 	// この時点で、pは実数部の文字数になっている
+	// here 'p' stands for the length of significand digits
+
+	signifsize = p;
 
 	// 実数部の最大桁と最小桁を識別する
 	nonzerofound = false;
 	dotexist = false;
+	zerofound = false;
 	ld = 0;
 	sd = 0;
 	curd = 0;
 	
-	for ( int i = 0; i < p; i++){
+	for ( int i = 0; i < signifsize; i++){
+
+		// substantially going into four paths
+		//  str[ i]: '+' or '-'
+		//  str[ i]: '0'
+		//  str[ i]: one in 1-9
+		//  str[ i]: '.'
 		
 		if ( str[ i] == '+' || str[ i] == '-'){
 			
 			if ( i == 0){
 				// do nothing
 			} else {
+				// '+' or '-' appeared in the middle of digits
 				return false;
 			}
 			
@@ -296,6 +320,8 @@ bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 					// do nothing
 				}
 			}
+
+			zerofound = true;
 			
 		} else if ( nonzerostr.find( str[ i]) != std::string :: npos){
 			
@@ -315,11 +341,13 @@ bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 					ld = 0;
 				}
 			}
+
 			nonzerofound = true;
 			
 		} else if ( str[ i] == '.'){
 			
 			if ( dotexist == true){
+				// '.' appeared twice
 				return false;
 			} else {
 				dotexist = true;
@@ -334,7 +362,21 @@ bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 		ld += expval;
 		sd += expval;
 	}
-	
+
+	if ( nonzerofound == false){
+
+		if ( zerofound == false){
+			// there is not any of 0-9 digit in significand
+			return false;
+		}
+
+		// there are only '0's in significand
+		// in this case ld and sd shall be zeros
+		ld = 0;
+		sd = 0;
+
+	}
+
 	larged = ld;
 	smalld = sd;
 	return true;
@@ -345,6 +387,8 @@ bool effectiveDigits( int &larged, int &smalld, const std::string &str)
 	"+-0123456789"のみからなるstrを整数に変えてretに格納する。
 	"+-"は先頭にのみ許される。"."などは許容しない。
 	成功したらtrueを返す。
+	
+	もしstrが "" か "+" か "-" だったら、falseを返す。
 */
 namespace { // only used in this file
 bool localStoI( int &ret, const std::string &str)
@@ -387,6 +431,9 @@ bool localStoI( int &ret, const std::string &str)
 } // end namespace
 
 /* ********** Definitions of Member Functions ********** */
+
+
+/* ここからやる。。 */
 
 Dataset ::
 Dataset( void)
