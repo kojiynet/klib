@@ -122,34 +122,40 @@ class Datacolumn {
 	
 private:
 	
-	bool isnumeric; // "false" by default
+	bool isnumeric;    // "false" by default
 	std::string vname;
 	int ncase;
-	int nmissing; // valid only for numeric column
+	int nmissing;      // valid only for numeric column
 	
 	std::vector <std::string> strs; // emtpy if "isnumeric" is true
-	std::vector <double> vals; // empty if "isnumeric" is false
+	std::vector <double> vals;      // empty if "isnumeric" is false
 	// For missing cases of numeric column,
 	// "numeric_limits <double> :: quiet_NaN()" is assigned in "vals" elements
 	
+	// maxwidth group, as represented by string
 	bool maxwidthvalid; // true if maxwidth has a valid value
-	int maxwidth; // for string
+	int maxwidth;       // for string
 	
-	// for numeric vector
+	// digit group, for numeric vector
+
 	// digitsvalid is false if digits variables (maxdigit, mindigit, maxprec)
 	// are not assured to be correct
 	// possibly because there are only missing ('.') cases
 	bool digitsvalid;
 	
-	// for numeric vector; stringからの変換時に検出した、有効桁の最大値
-	// （桁を10^kのkで表現）
+	// for numeric vector; 
+	// maxdigit == k indicates the largest valid digit is that of 10^k
+	// which was detected in converting from string
 	int maxdigit;
 	
-	// for numeric vector; stringからの変換時に検出した、有効桁の最小値
-	// （桁を10^kのkで表現）
+	// for numeric vector; 
+	// mindigit == k indicates the smallest valid digit is that of 10^k
+	// which was detected in converting from string
 	int mindigit;
 	
-	// for numeric vector; stringからの変換時の、実数部の有効桁数（の最大値）
+	// for numeric vector
+	// the largest number of effective digits
+	// which was detected in converting from string
 	int maxprec;
 	
 public:
@@ -187,13 +193,14 @@ public:
 			}
 		}
 		
+		cout << "ncase: " << ncase << endl;
+		cout << "nmissing: " << nmissing << endl;
 		cout << "maxwidthvalid: " << maxwidthvalid << endl;
 		cout << "maxwidth: " << maxwidth << endl;
 		cout << "digitsvalid: " << digitsvalid << endl;
 		cout << "maxdigit: " << maxdigit << endl;
 		cout << "mindigit: " << mindigit << endl;
 		cout << "maxprec: " << maxprec << endl;
-		cout << "nmissing: " << nmissing << endl;
 		cout << "isInteger(): " << isInteger() << endl;
 		
 	}
@@ -432,8 +439,9 @@ bool localStoI( int &ret, const std::string &str)
 
 /* ********** Definitions of Member Functions ********** */
 
+/* ********** Class Dataset ********** */
 
-/* ここからやる。。 */
+// ここからやるけど、先にDatacolumnを見る。
 
 Dataset ::
 Dataset( void)
@@ -882,11 +890,13 @@ void Dataset :: printTest( void) // to test
 #endif
 
 
+/* ********** Class Datacolumn ********** */
+
 Datacolumn ::
 Datacolumn( void)
 : isnumeric( false), vname(), ncase( 0), nmissing( 0), strs(), vals(),
-  maxwidthvalid( false), maxwidth( -1), digitsvalid( false),
-  maxdigit( -1), mindigit( -1), maxprec( -1)
+  maxwidthvalid( false), maxwidth( -1), 
+  digitsvalid( false), maxdigit( -1), mindigit( -1), maxprec( -1)
 {
 }
 
@@ -962,6 +972,9 @@ setData( const std::string &vn0, const std::vector <std::string> &strs0)
 	maxprec = -1;
 	
 }
+
+// Datacolumn
+// ここまで見た。
 
 /*
 	stringのcolumnをnumericに変換する。
