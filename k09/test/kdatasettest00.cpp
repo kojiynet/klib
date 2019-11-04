@@ -56,7 +56,7 @@ int main( int, char *[])
 	
 	testEffectiveDigits();
 
-//	testDatacolumn();
+	testDatacolumn();
 		
 //	testDataset();
 
@@ -147,13 +147,6 @@ void testEffectiveDigits( void)
 	b = effectiveDigits( ld, sd, str);
 	cout << "str: " << str << " ReturnValue: " << boolalpha << b << endl;
 
-	/*
-	
-	// 以下をeffectiveDigits()用のテストプログラムに入れていく。
-
-	
-	*/ 
-
 }
 
 void testDatacolumn( void)
@@ -177,6 +170,8 @@ void testDatacolumn( void)
 	dc.print();
 	cout << endl;
 	
+	/*
+
 	bool b = dc.convertToNumeric( nmisret);
 	cout << "return value of convertToNumeric( nmisret): " << b << endl;
 	cout << "\"nmisret\" after convertToNumeric( nmisret): " << nmisret << endl
@@ -186,7 +181,7 @@ void testDatacolumn( void)
 	dc.print();
 	cout << endl;
 	
-	
+
 	// integer example
 	
 	svec.clear();
@@ -243,6 +238,8 @@ void testDatacolumn( void)
 	cout << "\"nmisret\" after convertToNumeric( nmisret): " << nmisret << endl;
 	dc.print();
 	cout << endl;
+
+	*/
 
 }
 
