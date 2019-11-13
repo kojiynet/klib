@@ -13,8 +13,10 @@
 	When functions dealing with characters,
 	they are applicable only to ASCII characters.
 	
-	文字列→数値の変換の際に、もとの桁数を保持したい。
-	その際、有効桁数が、doubleの有効桁の限界を超えていたらどうするかを考える。
+	TODO:
+	・文字列→数値の変換の際に、もとの桁数を保持したい。
+	　その際、有効桁数が、doubleの有効桁の限界を超えていたらどうするかを考える。
+	・koliという名前空間をつくる。
 	
 	
 	k07/kdataset00.cppまでは旧版だった。
@@ -441,8 +443,6 @@ bool localStoI( int &ret, const std::string &str)
 
 /* ********** Class Dataset ********** */
 
-// ここからやるけど、先にDatacolumnを見る。
-
 Dataset ::
 Dataset( void)
 : title(), nvar( 0), ncase( 0), dc()
@@ -482,8 +482,17 @@ copyFrom( const Dataset &obj)
 	
 }
 
-// ファイル名fnのCSVファイルを読み込む。
-// 成功の場合true、失敗の場合falseを返す。
+
+/**
+ * @brief        CSVファイルを読み込む関数
+ *               (read CSV file)
+ * @param[in] fn 対象となるCSVファイル名
+ *               (CSV file to read)
+ * @return bool  成功か否か
+ *               (returns boolean indicating success)
+ * @detail       CSVファイルを読み込んで文字列のDatasetにする。この関数では','は常に区切り文字となる。ダブルクォーテーションで囲まれた','であっても区切り文字とみなされる。
+ *               (This reads CSV file into dataset object. Note that this function always regard ',' as delimiter; two double-quotations cannot serve as escape)
+ */
 bool
 Dataset ::
 readCsvFile( const std::string &fn)
@@ -494,12 +503,18 @@ readCsvFile( const std::string &fn)
 	
 }
 
-/*
-	ファイル名fnのファイルから、
-	文字列sepに含まれるいずれかの文字で区切りながらデータを読み込む。
-	sepには複数文字が含まれていてよい。
-	成功の場合true、失敗の場合falseを返す。
-*/
+/**
+ * @brief         区切り文字で区切りながら文字列をファイルから読み込む関数
+ *                (read character-separated file)
+ * @param[in] fn  対象となるファイル名
+ *                (file to read)
+ * @param[in] sep 区切り文字（の集合）
+ *                ((a set of) delimiter characters)
+ * @return bool  成功か否か
+ *               (returns boolean indicating success)
+ * @detail       sepに含まれるいずれの文字も区切り文字とみなしながら、ファイルを読み込んで文字列のDatasetにする。この関数では、ダブルクォーテーションで囲まれた区切り文字も、通常の区切り文字とみなされる。
+ *               (This reads a file into dataset object, using any character in sep as a delimiter. Note that this function always regard a delimiter even if it is in between two double-quotations)
+ */
 bool
 Dataset ::
 readFile( const std::string &fn, const std::string &sep)
@@ -517,7 +532,9 @@ readFile( const std::string &fn, const std::string &sep)
 	kif.getSeparatedStrings( strvecs, sep);
 	kif.close();
 	
-	if ( strvecs.size() < 1){ // ファイル内容が1行もない場合、失敗
+
+	// returns false if there is no line 
+	if ( strvecs.size() < 1){
 		return false;
 	}
 	
@@ -528,29 +545,33 @@ readFile( const std::string &fn, const std::string &sep)
 	// First line is seen as variable names
 	
 	nvar0 = strvecs[ 0].size();
-	if ( nvar0 < 1){ // 変数名が1つもない場合、失敗
+
+	// returns false if there is no variable
+	if ( nvar0 < 1){ 
 		return false;
 	}
-	vname0.resize( nvar0);
-	for ( int j = 0; j < nvar0; j++){
-		vname0[ j] = strvecs[ 0][ j];
-	}
+
+	vname0 = strvecs[ 0];
 	
 	// pick up data
 	
-	std::vector < std::vector <std::string> > dc0; // 「列メジャー」なvector
+	std::vector < std::vector <std::string> > dc0; // column-major type
 	dc0.resize( nvar0);
 	for ( int j = 0; j < nvar0; j++){
 		dc0[ j].reserve( strvecs.size() - 1);
 	}
 	
+	// Empty Line:
+	//   there is not string; or
+	//   there is only one string and the length of the string is smaller than 1
+	// Returns false if valid string AFTER an empty line is found
+	// 空行の判定：
+	// 文字列が1つもないか、
+	// 文字列が1つのみ存在しその文字列のサイズが1より小さい場合は、
+	// 空行だと判断する。空行のあとに有効なデータ（区切り文字以外のもの）があるときエラーにする。
 	bool emptylineexists = false;
 	for ( int i = 1; i < strvecs.size(); i++){
 		
-		// 空行の判定：
-		// 文字列が1つもないか、
-		// 文字列が1つのみ存在しその文字列のサイズが1より小さい場合は、
-		// 空行だと判断する。空行のあとに有効なデータ（区切り文字以外のもの）があるときエラーにする。
 		if ( strvecs[ i].size() < 1){
 			
 			emptylineexists = true;
@@ -566,6 +587,7 @@ readFile( const std::string &fn, const std::string &sep)
 				return false;
 			}
 			
+			// returns false if there is valid string AFTER an empty line
 			// 空行のあとにデータ（区切り文字以外のもの）がある場合、エラーに
 			if ( emptylineexists == true){
 				return false;
@@ -591,6 +613,9 @@ readFile( const std::string &fn, const std::string &sep)
 	return true;
 	
 }
+
+
+// ここからやるけど、先にDatacolumnを見る。
 
 /*
 	stringのデータ列のうち、numericに変換できるものは変換する。
