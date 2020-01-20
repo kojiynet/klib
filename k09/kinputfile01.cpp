@@ -187,8 +187,10 @@ bool kinputfile :: readFileAndSeparateLines( std::vector <std::string> &ret)
 
 }
 
-// ※この関数は、'\r'のみの改行には反応してくれない。
-// ※一般にはreadFile()を推奨するが、大きなファイルを読む場合にはreadLine()の方が速いかも。
+/*
+※この関数は、Windows上では、'\r'のみの改行には反応してくれない。
+※一般にはreadFile()を推奨するが、大きなファイルを読む場合にはreadLine()の方が速いかもしれない。
+*/
 // ファイルから1行読み込んで、渡された文字列オブジェクトretに入れる。
 // EOFに達したらfalseを返す。
 bool kinputfile :: readLine( std::string &ret)
@@ -240,7 +242,7 @@ void kinputfile :: readAllLines( std::vector <std::string> &ret)
 // 文字列sepで各行を区切って、vector <string>にして、
 // それをさらにvectorにしたもの（要素は行数だけある）を
 // retに入れる。
-// 行によって列数がまちまちになっている可能性がある
+// 行によって列数がまちまちになっている可能性がある。
 void
 kinputfile :: 
 getSeparatedStrings(
@@ -256,7 +258,7 @@ getSeparatedStrings(
 	readFileAndSeparateLines( lines);
 	
 	ret.resize( lines.size());
-
+	
 	for ( int i = 0; i < lines.size(); i++){
 		tokenize( tempwords, lines[ i], sep);
 		ret[ i] = tempwords;
