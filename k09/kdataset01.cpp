@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include <k09/kutil00.cpp>
+#include <k09/kutil01.cpp>
 #include <k09/kinputfile01.cpp>
 
 
@@ -1030,26 +1030,23 @@ convertToNumeric( int &nmisret)
 	int nmis0 = 0;
 	for ( int i = 0; i < strs.size(); i++){
 		
-		if ( strs[ i].size() < 1){
+		// if strs[ i] is empty, then vals[ i] should be NaN (missing)
+		if ( strs[ i].size() < 1){ 
 			
 			vals[ i] = numeric_limits <double> :: quiet_NaN();
 			nmis0++;
 			continue;
 			
 		}
-		
-		int p1, p2;
-		p1 = strs[ i].find_first_not_of( " \t");
-		p2 = strs[ i].find_last_not_of( " \t");
-		if ( p1 == std::string :: npos || p2 == std::string :: npos){
-			
-			vals[ i] = numeric_limits <double> :: quiet_NaN();
-			nmis0++;
-			continue;
-			
-		}
-		std::string tempstr = strs[ i].substr( p1, p2 - p1 + 1);
-		
+
+		std::string tempstr;
+		std::string delim;
+
+		delim.assign( " \t");
+
+		// erase ' ' and '\t' in the first and the last part of strs[ i]
+		tempstr = boost::trim_copy_if( strs[ i], boost::is_any_of( delim));
+
 		if ( tempstr == "."){
 			
 			vals[ i] = numeric_limits <double> :: quiet_NaN();
@@ -1057,13 +1054,13 @@ convertToNumeric( int &nmisret)
 			
 		} else {
 			
-			vals[ i] = stringToDouble( tempstr);
+			vals[ i] = stringToDouble( tempstr); 
 			
 			if ( isnan( vals[ i]) == true){
 				vals.clear();
 				return false;
 			}
-			
+
 			int larged, smalld;
 			bool b = effectiveDigits( larged, smalld, tempstr);
 			if ( b == false){
