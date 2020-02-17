@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <boost/dynamic_bitset.hpp>
 #include <k09/kutil01.cpp>
 #include <k09/kinputfile01.cpp>
 
@@ -98,10 +99,14 @@ public:
 	bool getColumnIndex( int &, const std::string &) const;
 	
 	bool getNumericVector( std::vector <double> &, const std::string &) const;
+	bool getNumericVectorWithoutMissing( std::vector <double> &, const std::string &) const;
 	bool getRowVectors(
 	 std::vector <std::string> &, std::vector < std::vector <double> > &
 	) const;
-	
+
+	template <typename TFunc> 
+	bool specifyValid( const std::string &, TFunc);
+
 	void print( void) const;
 	
 	// ↓以下未実装
@@ -128,6 +133,7 @@ private:
 	std::string vname;
 	int ncase;
 	int nmissing;      // valid only for numeric column
+	                   // "nmissing" reflects only system-missing on reading
 	
 	std::vector <std::string> strs; // emtpy if "isnumeric" is true
 	std::vector <double> vals;      // empty if "isnumeric" is false
@@ -160,6 +166,11 @@ private:
 	// which was detected in converting from string
 	int maxprec;
 	
+	// for numeric vector
+	// the container representing if the case is valid (i.e. non-missing)
+	// vbits is empty (its size is zero) unless user-missing is specified
+	boost::dynamic_bitset<> vbits;
+
 public:
 	
 	Datacolumn( void);
@@ -178,8 +189,12 @@ public:
 	int getNCase( void) const;
 	double getNumericValue( int) const;
 	bool getNumericVector( std::vector <double> &) const;
+	bool getNumericVectorWithoutMissing( std::vector <double> &) const;
 	bool getStringVector( std::vector <std::string> &) const;
-	
+
+	template <typename TFunc>
+	bool specifyValid( TFunc func);
+
 	void print( void) // to test
 	{
 		
@@ -785,6 +800,37 @@ getNumericVector( std::vector <double> &vret, const std::string &vn0) const
 }
 
 /*
+	find the numeric datacolumn of the name vn0 and copy the contents into vret
+	 EXCLUDING missing cases;
+	returns true for success and false for failure;
+	failure is issued if there is no variable of the name vn0,
+	or there are two or more such variables, or such a variable is not numeric one.
+*/
+bool
+Dataset ::
+getNumericVectorWithoutMissing( std::vector <double> &vret, const std::string &vn0) const
+{
+	
+	bool b;
+	int idx;
+	
+	b = getColumnIndex( idx, vn0);
+	if ( b == false){ // 変数名vn0の変数がないか、2つ以上ある場合
+		vret.clear();
+		return false;
+	}
+	
+	b = dc[ idx].getNumericVectorWithoutMissing( vret);
+	if ( b == false){ // 変数vn0が数値ではない場合
+		vret.clear();
+		return false;
+	}
+	
+	return true;
+	
+}
+
+/*
 	数値コラムだけを抜き出し、その変数名群のvectorをvnamesとして、
 	各ケースの値を収めた行ベクトルをケース数分集めた数値のvectorをrowvecsとして、返す。
 	数値コラムが1つもない場合にはfalseを、それ以外の場合にはtrueを返す。
@@ -824,6 +870,33 @@ getRowVectors(
 	
 	return true;
 	
+}
+
+/*
+	「有効ケース」の条件を指定する。これに当てはまらないものはMissing（NaN）になる。
+	TFuncはboolを返すファンクタ。
+*/
+template <typename TFunc>
+bool 
+Dataset ::
+specifyValid( const std::string &vn0, TFunc func)
+{
+		
+	bool b;
+	int idx;
+	
+	b = getColumnIndex( idx, vn0);
+	if ( b == false){ // 変数名vn0の変数がないか、2つ以上ある場合
+		return false;
+	}
+	
+	b = dc[ idx].specifyValid( func);
+	if ( b == false){ // 変数vn0が数値ではない場合
+		return false;
+	}
+	
+	return true;
+
 }
 
 /*
@@ -932,7 +1005,8 @@ Datacolumn( const Datacolumn &dc0)
   nmissing( dc0.nmissing), strs( dc0.strs), vals( dc0.vals),
   maxwidthvalid( dc0.maxwidthvalid), maxwidth( dc0.maxwidth),
   digitsvalid( dc0.digitsvalid),
-  maxdigit( dc0.maxdigit), mindigit( dc0.mindigit), maxprec( dc0.maxprec)
+  maxdigit( dc0.maxdigit), mindigit( dc0.mindigit), maxprec( dc0.maxprec),
+  vbits( dc0.vbits)
 {
 }
 
@@ -968,6 +1042,7 @@ copyFrom( const Datacolumn &dc0)
 	maxdigit = dc0.maxdigit;
 	mindigit = dc0.mindigit;
 	maxprec = dc0.maxprec;
+	vbits = dc0.vbits;
 	
 }
 
@@ -996,6 +1071,8 @@ setData( const std::string &vn0, const std::vector <std::string> &strs0)
 	maxdigit = -1;
 	mindigit = -1;
 	maxprec = -1;
+
+	vbits.clear();
 	
 }
 
@@ -1216,6 +1293,37 @@ getNumericVector( std::vector <double> &vret) const
 }
 
 /*
+	copies the contents of vals into vret
+	 EXCLUDING missing cases (i.e. quiet_NaN);
+	returns true for success; false for failure;
+	failure is issued if the column is not numeric
+*/
+bool 
+Datacolumn ::
+getNumericVectorWithoutMissing( std::vector <double> &vret) const
+{
+	
+	vret.clear();
+
+	if ( isnumeric == false){ // 数値のデータコラムではない場合
+		vret.clear();
+		return false;
+	}
+	
+	vret.reserve( vals.size());
+	for ( double v : vals){
+		if ( isnan( v)){
+			// do nothing
+		} else {
+			vret.push_back( v);
+		}
+	}
+
+	return true;
+	
+}
+
+/*
 	copies the contents of strs into sret;
 	returns true for success; false for failure;
 	failure is issued if the column is numeric
@@ -1235,6 +1343,35 @@ getStringVector( std::vector <std::string> &sret) const
 	
 }
 
+/*
+	「有効ケース」の条件を指定する。これに当てはまらないものはMissing（NaN）になる。
+	TFuncはboolを返すファンクタ。
+*/
+template <typename TFunc>
+bool 
+Datacolumn ::
+specifyValid( TFunc func)
+{
+	
+	if ( isnumeric == false){ // 数値のデータコラムではない場合
+		return false;
+	}
+	
+	for ( double &v : vals){
+		if ( isnan( v)){
+			// do nothing
+		} else {
+			if ( func( v)){
+				// do nothing
+			} else {
+				v = numeric_limits<double>::quiet_NaN();
+			}
+		}
+	}
+
+	return true;
+	
+}
 
 #endif // kdataset_cpp_include_guard
 
