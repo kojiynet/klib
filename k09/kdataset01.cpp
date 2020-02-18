@@ -5,7 +5,7 @@
 	Ver. k09.01
 	
 	Written by Koji Yamamoto
-	Copyright (C) 2016-2019 Koji Yamamoto
+	Copyright (C) 2016-2020 Koji Yamamoto
 	In using this, please read the document which states terms of use.
 	
 	Dataset and Data column Classes
@@ -39,7 +39,7 @@
 
 /* ********** Namespace Declarations/Directives ********** */
 
-using namespace std;
+//using namespace std;
 
 
 /* ********** Class Declarations ********** */
@@ -110,11 +110,11 @@ public:
 	void print( void) const;
 	
 	// ↓以下未実装
-	void printStream( ostream &, const std::string);
+	void printStream( std::ostream &, const std::string);
 	// ↑ストリームに区切り文字を指定して単純に出力。
 	// titleは出さない。
 	
-	void printStream( ostream &, const std::string, int k, int el);
+	void printStream( std::ostream &, const std::string, int k, int el);
 	// ↑ストリームに区切り文字を指定して出力。
 	// 精度も指定する。
 	// titleは出さない。
@@ -139,6 +139,8 @@ private:
 	std::vector <double> vals;      // empty if "isnumeric" is false
 	// For missing cases of numeric column,
 	// "numeric_limits <double> :: quiet_NaN()" is assigned in "vals" elements
+	
+	// 以下のうち、convertToNumericを1度したら不変になるグループを確定したい。
 	
 	// maxwidth group, as represented by string
 	bool maxwidthvalid; // true if maxwidth has a valid value
@@ -167,7 +169,7 @@ private:
 	int maxprec;
 	
 	// for numeric vector
-	// the container representing if the case is valid (i.e. non-missing)
+	// the container representing if the case is valid (i.e. not user-missing)
 	// vbits is empty (its size is zero) unless user-missing is specified
 	boost::dynamic_bitset<> vbits;
 
@@ -198,27 +200,27 @@ public:
 	void print( void) // to test
 	{
 		
-		cout << "vname: " << vname << endl;
+		std::cout << "vname: " << vname << std::endl;
 		
 		if ( isnumeric == true ){
 			for ( auto v : vals){
-				cout << "vals: " << v << endl;
+				std::cout << "vals: " << v << std::endl;
 			}
 		} else {
 			for ( auto s : strs){
-				cout << "strs: " << s << endl;
+				std::cout << "strs: " << s << std::endl;
 			}
 		}
 		
-		cout << "ncase: " << ncase << endl;
-		cout << "nmissing: " << nmissing << endl;
-		cout << "maxwidthvalid: " << maxwidthvalid << endl;
-		cout << "maxwidth: " << maxwidth << endl;
-		cout << "digitsvalid: " << digitsvalid << endl;
-		cout << "maxdigit: " << maxdigit << endl;
-		cout << "mindigit: " << mindigit << endl;
-		cout << "maxprec: " << maxprec << endl;
-		cout << "isInteger(): " << isInteger() << endl;
+		std::cout << "ncase: " << ncase << std::endl;
+		std::cout << "nmissing: " << nmissing << std::endl;
+		std::cout << "maxwidthvalid: " << maxwidthvalid << std::endl;
+		std::cout << "maxwidth: " << maxwidth << std::endl;
+		std::cout << "digitsvalid: " << digitsvalid << std::endl;
+		std::cout << "maxdigit: " << maxdigit << std::endl;
+		std::cout << "mindigit: " << mindigit << std::endl;
+		std::cout << "maxprec: " << maxprec << std::endl;
+		std::cout << "isInteger(): " << isInteger() << std::endl;
 		
 	}
 	
@@ -906,9 +908,11 @@ specifyValid( const std::string &vn0, TFunc func)
 void Dataset :: print( void) const
 {
 	
+	using namespace std;
+
 	std::vector < std::vector <std::string> > strcols;
 	std::vector <double> numvec;
-	stringstream ss;
+	std::stringstream ss;
 	std::vector <int> width;
 	
 	if ( dc.size() < 1 || dc[ 0].getNCase() < 1){
@@ -981,7 +985,7 @@ void Dataset :: printTest( void) // to test
 	for ( int i = 0; i < dc.size(); i++){
 		
 		dc[ i].print();
-		cout << endl;
+		std::cout << std::endl;
 		
 	}
 	
@@ -1110,7 +1114,7 @@ convertToNumeric( int &nmisret)
 		// if strs[ i] is empty, then vals[ i] should be NaN (missing)
 		if ( strs[ i].size() < 1){ 
 			
-			vals[ i] = numeric_limits <double> :: quiet_NaN();
+			vals[ i] = std::numeric_limits <double> :: quiet_NaN();
 			nmis0++;
 			continue;
 			
@@ -1126,7 +1130,7 @@ convertToNumeric( int &nmisret)
 
 		if ( tempstr == "."){
 			
-			vals[ i] = numeric_limits <double> :: quiet_NaN();
+			vals[ i] = std::numeric_limits <double> :: quiet_NaN();
 			nmis0++;
 			
 		} else {
@@ -1265,7 +1269,7 @@ getNumericValue( int r) const
 {
 	
 	if ( isnumeric == false || vals.size() < 1){
-		return numeric_limits <double> :: quiet_NaN();
+		return std::numeric_limits <double> :: quiet_NaN();
 	}
 	
 	return vals[ r];
@@ -1294,7 +1298,7 @@ getNumericVector( std::vector <double> &vret) const
 
 /*
 	copies the contents of vals into vret
-	 EXCLUDING missing cases (i.e. quiet_NaN);
+	 EXCLUDING missing cases (i.e. quiet_NaN and user-missing);
 	returns true for success; false for failure;
 	failure is issued if the column is not numeric
 */
@@ -1310,9 +1314,15 @@ getNumericVectorWithoutMissing( std::vector <double> &vret) const
 		return false;
 	}
 	
-	vret.reserve( vals.size());
-	for ( double v : vals){
+	int nc = vals.size();
+
+	vret.reserve( nc);
+
+	for ( int i = 0; i < nc; i++){
+		const double &v = vals[ i];
 		if ( isnan( v)){
+			// do nothing
+		} else if ( vbits.size() > 0 && vbits[ i] == false){
 			// do nothing
 		} else {
 			vret.push_back( v);
@@ -1344,7 +1354,10 @@ getStringVector( std::vector <std::string> &sret) const
 }
 
 /*
-	「有効ケース」の条件を指定する。これに当てはまらないものはMissing（NaN）になる。
+	「有効ケース」の条件を指定する。
+	これに当てはまらないケースはUser-Missing扱いになる。
+	User-Missingはvbitsで表現される。
+	vbitsがまだ使われていない（sizeがゼロの）場合は、sizeをケース数にする。
 	TFuncはboolを返すファンクタ。
 */
 template <typename TFunc>
@@ -1356,15 +1369,23 @@ specifyValid( TFunc func)
 	if ( isnumeric == false){ // 数値のデータコラムではない場合
 		return false;
 	}
+
+	int nc = vals.size();
+
+	if ( vbits.size() < 1){
+		vbits.resize( nc);
+		vbits.set();
+	}
 	
-	for ( double &v : vals){
+	for ( int i = 0; i < nc; i++){
+		const double &v = vals[ i];
 		if ( isnan( v)){
 			// do nothing
 		} else {
 			if ( func( v)){
 				// do nothing
 			} else {
-				v = numeric_limits<double>::quiet_NaN();
+				vbits[ i] = false;
 			}
 		}
 	}
