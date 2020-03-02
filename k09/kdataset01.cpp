@@ -104,8 +104,7 @@ public:
 	 std::vector <std::string> &, std::vector < std::vector <double> > &
 	) const;
 
-	template <typename TFunc> 
-	bool specifyValid( const std::string &, TFunc);
+	bool specifyValid( const std::string &, std::function < bool( double) > );
 
 	void print( void) const;
 	
@@ -194,8 +193,7 @@ public:
 	bool getNumericVectorWithoutMissing( std::vector <double> &) const;
 	bool getStringVector( std::vector <std::string> &) const;
 
-	template <typename TFunc>
-	bool specifyValid( TFunc func);
+	bool specifyValid( std::function < bool( double) > );
 
 	void print( void) // to test
 	{
@@ -876,12 +874,11 @@ getRowVectors(
 
 /*
 	「有効ケース」の条件を指定する。これに当てはまらないものはMissing（NaN）になる。
-	TFuncはboolを返すファンクタ。
+	funcは、値が有効かどうかを判定して、結果をboolで返す関数オブジェクト。
 */
-template <typename TFunc>
 bool 
 Dataset ::
-specifyValid( const std::string &vn0, TFunc func)
+specifyValid( const std::string &vn0, std::function < bool( double) > func)
 {
 		
 	bool b;
@@ -1137,7 +1134,7 @@ convertToNumeric( int &nmisret)
 			
 			vals[ i] = stringToDouble( tempstr); 
 			
-			if ( isnan( vals[ i]) == true){
+			if ( std::isnan( vals[ i]) == true){
 				vals.clear();
 				return false;
 			}
@@ -1320,7 +1317,7 @@ getNumericVectorWithoutMissing( std::vector <double> &vret) const
 
 	for ( int i = 0; i < nc; i++){
 		const double &v = vals[ i];
-		if ( isnan( v)){
+		if ( std::isnan( v)){
 			// do nothing
 		} else if ( vbits.size() > 0 && vbits[ i] == false){
 			// do nothing
@@ -1358,12 +1355,11 @@ getStringVector( std::vector <std::string> &sret) const
 	これに当てはまらないケースはUser-Missing扱いになる。
 	User-Missingはvbitsで表現される。
 	vbitsがまだ使われていない（sizeがゼロの）場合は、sizeをケース数にする。
-	TFuncはboolを返すファンクタ。
+	funcは値が有効かどうかを判定してboolで返す関数オブジェクト。
 */
-template <typename TFunc>
 bool 
 Datacolumn ::
-specifyValid( TFunc func)
+specifyValid( std::function < bool( double) > func)
 {
 	
 	if ( isnumeric == false){ // 数値のデータコラムではない場合
@@ -1379,7 +1375,7 @@ specifyValid( TFunc func)
 	
 	for ( int i = 0; i < nc; i++){
 		const double &v = vals[ i];
-		if ( isnan( v)){
+		if ( std::isnan( v)){
 			// do nothing
 		} else {
 			if ( func( v)){
