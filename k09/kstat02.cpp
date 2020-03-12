@@ -49,8 +49,23 @@ class JudgeEqualTol;
 template <typename T, typename TCount>
 class FreqType;
 
+// TCode is int by default
+template <typename T, typename TCode>
+class RecodeTable;
+
 
 /* ********** Function Declarations ********** */
+
+template <typename T>
+int countUniqueValues( const std::vector <T> &);
+
+template <typename TOrigin, typename TCode, typename TCount>
+void
+createFreqFromRecodeTable( 
+	FreqType <TCode, TCount> &,
+	const std::vector <TOrigin> &,
+	const RecodeTable <TOrigin, TCode> &
+);
 
 double sum( const std::vector <double> &);
 double mean( const std::vector <double> &);
@@ -122,6 +137,16 @@ public:
 
 // frequency type
 // T is type for key, and TCount is type for count
+// This type is essentially for discrete variables,
+// with Tolerance for equality judgment being very small.
+// When applied to continuous variables, 
+// special methods should be used.
+// 基本的に離散変数用。
+// doubleなどに使う場合、等値判断のための
+// toleranceは0か非常に小さい値である、
+// という前提がある。そうでないとカテゴリ間の
+// 重なりが生じてしまう。
+// 連続変数に用いる場合には、特定の機能を使うべし。
 template <typename T, typename TCount = int>
 class FreqType {
 	
@@ -153,7 +178,25 @@ public:
 	double meanFromFreq( void) const;
 	double medianFromFreq( void) const;
 	void modeFromFreq( std::vector <T> &) const;
-	
+
+};
+
+
+template <typename T, typename TCode = int>
+class RecodeTable {
+
+private:
+
+	// something
+	// maybe some variables of T and TCode, etc.
+
+public:
+
+	RecodeTable( void);
+	~RecodeTable( void);
+
+	void setAutoTableFromContVar( const std::vector <T> &);
+
 };
 
 
@@ -164,6 +207,32 @@ public:
 
 
 /* ********** Function Definitions ********** */
+
+// ==演算子を用いて、ユニークな値が何個あるかを返す。
+template <typename T>
+int countUniqueValues( const std::vector <T> &vec0)
+{
+
+	if ( vec0.size() < 1){
+		return 0;
+	}
+
+	std::vector <T> vec( vec0);
+
+	std::sort( vec.begin(), vec.end());
+
+	T prev = vec[ 0];
+	int ret = 1;
+	for ( auto v : vec){
+		if ( v != prev){
+			ret++;
+			prev = v;
+		}
+	}
+
+	return ret;
+
+}
 
 // returns the sum of all the elements
 double sum( const std::vector <double> &dv0)
