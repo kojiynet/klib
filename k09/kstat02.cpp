@@ -53,6 +53,10 @@ class FreqType;
 template <typename T, typename TCode>
 class RecodeTable;
 
+// TCode is int by default
+template <typename T, typename TCode>
+class CodeType;
+
 
 /* ********** Function Declarations ********** */
 
@@ -200,6 +204,22 @@ public:
 };
 
 
+template <typename T, typename TCode = int>
+class CodeType {
+
+private:
+
+	// something
+	// maybe some variables of T and TCode, etc.
+
+public:
+
+	CodeType( void);
+	~CodeType( void);
+
+};
+
+
 /* ********** Global Variables ********** */
 
 
@@ -209,6 +229,8 @@ public:
 /* ********** Function Definitions ********** */
 
 // ==演算子を用いて、ユニークな値が何個あるかを返す。
+// var0に欠損値は含まないと仮定して、ケース数を算出している。
+// We assume var0 does not contain invalid values.
 template <typename T>
 int countUniqueValues( const std::vector <T> &vec0)
 {
@@ -302,7 +324,6 @@ double boostMean( const std::vector <double> &dv0)
 
 }
 
-
 // 長さnの配列へのポインタpを得て、合計を返す。
 double sum( const double *p, int n)
 {
@@ -343,6 +364,8 @@ inline double unbiasedVar( const double *p, int n)
 
 
 /* ********** Definitions of Member Functions ********** */
+
+/* ********** class FreqType ********** */
 
 template <typename T, typename TCount>
 FreqType <T, TCount> ::
@@ -671,6 +694,41 @@ const
 		ret.push_back( keyvec[ id]);
 	}
 	
+}
+
+/* ********** class RecodeTable ********** */
+
+// We assume var0 does not contain invalid values.
+// var0に欠損値は含まないと仮定して、ケース数を算出している。
+template <typename T, typename TCode>
+void 
+RecodeTable <T, TCode> :: 
+setAutoTableFromContVar( const std::vector <T> &var0)
+{
+
+	// 以下はあとでRecodeType自体のフィールドにする。
+	std::vector < CodeType<T, TCode> > codes; // 1要素はRecodeTableの1行分
+	// ↓スコープを持つ列挙型、というもの。
+	enum class ElseType { Copy, AssignValue, AssignNan}; // "else"の場合の処理方法のenum
+	ElseType toDoForElese; // "else"の場合の処理方法
+	TCode valueForElse; // "else"の場合に値を埋める場合の値（NaN以外）
+
+
+	// ここから書く。
+
+	/*
+	Nを出す。
+	最大値と最小値を得る。
+	階級の数を出す。
+	※Stataでは、min{ sqrt(N), 10*ln(N)/ln(10)}らしいので、それでいく。
+	階級幅を決める。
+	1つずつ階級の範囲を決める。
+	ElseはNANでよい。ないから。
+	*/
+
+
+
+
 }
 
 
