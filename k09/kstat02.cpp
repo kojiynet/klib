@@ -71,6 +71,9 @@ createFreqFromRecodeTable(
 	const RecodeTable <TOrigin, TCode> &
 );
 
+template <typename T>
+std::vector <T> omitNan( const std::vector <T> &);
+
 double sum( const std::vector <double> &);
 double mean( const std::vector <double> &);
 double median( const std::vector <double> &);
@@ -191,15 +194,23 @@ class RecodeTable {
 
 private:
 
-	// something
-	// maybe some variables of T and TCode, etc.
+	// 1要素はRecodeTableの1行分
+	std::vector < CodeType<T, TCode> > codes; 
+
+	// "else"の場合の処理方法　（スコープを持つ列挙型）
+	enum class ElseType { Copy, AssignValue};
+	
+	ElseType toDoForElse; // "else"の場合の処理方法
+	TCode codeForElse; // "else"の場合に値を埋める場合の値（NaN以外）
 
 public:
 
-	RecodeTable( void);
-	~RecodeTable( void);
+	RecodeTable( void){}
+	~RecodeTable( void){}
 
 	void setAutoTableFromContVar( const std::vector <T> &);
+	std::vector <TCode> getPossibleCodeVec( void) const;
+	TCode getCodeForValue( T) const;
 
 };
 
@@ -209,13 +220,35 @@ class CodeType {
 
 private:
 
-	// something
-	// maybe some variables of T and TCode, etc.
+	T left; // the left-handside endpoint of the class
+	bool leftIn; // whether the endpoint value is inclusive
+
+	T right; // the right-handside endpoint of the class
+	bool rightIn; // whether the endpoint value is inclusive
+
+	TCode codeAssigned; // the code assigned to this class
 
 public:
 
-	CodeType( void);
-	~CodeType( void);
+	CodeType( T l0, bool li0, T r0, bool ri0, TCode ca0)
+	 : left( l0), leftIn( li0), right( r0), rightIn( ri0), codeAssigned( ca0)
+	{}
+
+	~CodeType( void){};
+
+	TCode getCodeAssigned( void){ return codeAssigned; };
+	bool correspond( T v){
+		if ( left < v && v < right){
+			return true;
+		}
+		if ( leftIn == true && left == v){
+			return true;
+		}
+		if ( rightIn == true && right == v){
+			return true;
+		}
+		return false;
+	}
 
 };
 
@@ -249,6 +282,48 @@ int countUniqueValues( const std::vector <T> &vec0)
 		if ( v != prev){
 			ret++;
 			prev = v;
+		}
+	}
+
+	return ret;
+
+}
+
+template <typename TOrigin, typename TCode, typename TCount>
+void
+createFreqFromRecodeTable( 
+	FreqType <TCode, TCount> &ret,
+	const std::vector <TOrigin> &var,
+	const RecodeTable <TOrigin, TCode> &rtable
+)
+{
+
+	ret.clear();
+	std::vector <TCode> codeVec = rtable.getPossibleCodeVec();
+	ret.addPossibleKeys( codeVec);
+	for ( auto v : var){
+		if ( std::isnan( v)){
+			// do nothing
+		} else {
+			TCode codeToAdd = rtable.getCodeForValue( v);
+			ret.increment( codeToAdd);
+		}
+	}
+
+}
+
+template <typename T>
+std::vector <T> omitNan( const std::vector <T> &vec0)
+{
+
+	std::vector <T> ret;
+	ret.reserve( vec0.size());
+
+	for ( const auto &v : vec0){
+		if ( std::isnan( v)){
+			// do nothing
+		} else {
+			ret.push_back( v);
 		}
 	}
 
@@ -698,38 +773,99 @@ const
 
 /* ********** class RecodeTable ********** */
 
-// We assume var0 does not contain invalid values.
-// var0に欠損値は含まないと仮定して、ケース数を算出している。
+// 自動で階級を作成する。
+// Nから階級の数を設定する。Stataの方式で。
+// 最小値と最大値の幅を出して、そこから階級幅を出す。
+// 各階級は、左端点を含み、右端点を含まない。
 template <typename T, typename TCode>
 void 
 RecodeTable <T, TCode> :: 
 setAutoTableFromContVar( const std::vector <T> &var0)
 {
+	
+	std::vector <T> vec = omitNan( var0);
+	std::sort( vec.begin(), vec.end());
+	
+	T min = *( vec.begin());
+	T max = *( vec.end() - 1);
+	int nobs = vec.size();
 
-	// 以下はあとでRecodeType自体のフィールドにする。
-	std::vector < CodeType<T, TCode> > codes; // 1要素はRecodeTableの1行分
-	// ↓スコープを持つ列挙型、というもの。
-	enum class ElseType { Copy, AssignValue, AssignNan}; // "else"の場合の処理方法のenum
-	ElseType toDoForElese; // "else"の場合の処理方法
-	TCode valueForElse; // "else"の場合に値を埋める場合の値（NaN以外）
+	// This way to determine the number of classes is
+	// from Stata's histogram command.
+	int nclasses = std::round( std::min( std::sqrt( nobs), 10 * log10( nobs)));
 
+	T width = static_cast<T>( std::ceil( ( long double)( max - min) / ( long double)nclasses));
 
-	// ここから書く。
+	T left = min;
+	T right;
+	codes.clear();
+	for ( int i = 1; left <= max; i++, left = right){
 
-	/*
-	Nを出す。
-	最大値と最小値を得る。
-	階級の数を出す。
-	※Stataでは、min{ sqrt(N), 10*ln(N)/ln(10)}らしいので、それでいく。
-	階級幅を決める。
-	1つずつ階級の範囲を決める。
-	ElseはNANでよい。ないから。
-	*/
+		right = left + width;
 
+		CodeType <T, TCode> ct = 
+			CodeType <T, TCode> (
+				left, true,
+				right, false,
+				i
+			);
+		
+		codes.push_back( ct);
 
+	}
 
+	toDoForElse = ElseType :: AssignValue;
+	codeForElse = std::numeric_limits<TCode>::quiet_NaN();
 
 }
 
+// codeになりうる値のvectorを返す。
+// ソートして返す。
+// ただし、Elseの場合のcodeは含めない。
+template <typename T, typename TCode>
+std::vector <TCode> 
+RecodeTable <T, TCode> :: 
+getPossibleCodeVec( void) const
+{
+
+	std::vector <TCode> ret;
+	ret.clear();
+
+	for ( auto c : codes){
+		ret.push_back( c.getCodeAssigned());
+	}
+	std::sort( ret.begin(), ret.end());
+
+	return ret;
+
+}
+
+// vに対応するコードを返す。
+template <typename T, typename TCode>
+TCode
+RecodeTable <T, TCode> :: 
+getCodeForValue( T v) const
+{
+
+	for ( auto c : codes){
+		if ( c.correspond( v) == true){
+			return c.getCodeAssigned();
+		}
+	}
+
+	TCode ret;
+
+	switch( toDoForElse){
+		case ElseType :: Copy:
+			ret = v;
+			break;
+		case ElseType :: AssignValue:
+			ret = codeForElse;
+			break;
+	}
+
+	return ret;
+
+}
 
 #endif /* kstat_cpp_include_guard */
