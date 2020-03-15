@@ -53,10 +53,13 @@ class FreqType;
 template <typename T, typename TCode>
 class RecodeTable;
 
-// TCode is int by default
+/*
+// This class is declared in RecodeType
 template <typename T, typename TCode>
-class CodeType;
-
+struct
+RecodeTable ::
+CodeType;
+*/
 
 /* ********** Function Declarations ********** */
 
@@ -194,8 +197,10 @@ class RecodeTable {
 
 private:
 
+	struct CodeType; // inner class; defined below
+
 	// 1要素はRecodeTableの1行分
-	std::vector < CodeType<T, TCode> > codes; 
+	std::vector <CodeType> codes; 
 
 	// "else"の場合の処理方法　（スコープを持つ列挙型）
 	enum class ElseType { Copy, AssignValue};
@@ -214,11 +219,12 @@ public:
 
 };
 
+template <typename T, typename TCode>
+struct
+RecodeTable <T, TCode> ::
+CodeType {
 
-template <typename T, typename TCode = int>
-class CodeType {
-
-private:
+// Fields:
 
 	T left; // the left-handside endpoint of the class
 	bool leftIn; // whether the endpoint value is inclusive
@@ -228,15 +234,14 @@ private:
 
 	TCode codeAssigned; // the code assigned to this class
 
-public:
+// Methods:
 
 	CodeType( T l0, bool li0, T r0, bool ri0, TCode ca0)
-	 : left( l0), leftIn( li0), right( r0), rightIn( ri0), codeAssigned( ca0)
+	: left( l0), leftIn( li0), right( r0), rightIn( ri0), codeAssigned( ca0)
 	{}
 
 	~CodeType( void){};
 
-	TCode getCodeAssigned( void){ return codeAssigned; };
 	bool correspond( T v){
 		if ( left < v && v < right){
 			return true;
@@ -771,6 +776,7 @@ const
 	
 }
 
+
 /* ********** class RecodeTable ********** */
 
 // 自動で階級を作成する。
@@ -803,8 +809,8 @@ setAutoTableFromContVar( const std::vector <T> &var0)
 
 		right = left + width;
 
-		CodeType <T, TCode> ct = 
-			CodeType <T, TCode> (
+		CodeType ct = 
+			CodeType (
 				left, true,
 				right, false,
 				i
@@ -832,7 +838,7 @@ getPossibleCodeVec( void) const
 	ret.clear();
 
 	for ( auto c : codes){
-		ret.push_back( c.getCodeAssigned());
+		ret.push_back( c.codeAssigned);
 	}
 	std::sort( ret.begin(), ret.end());
 
@@ -849,7 +855,7 @@ getCodeForValue( T v) const
 
 	for ( auto c : codes){
 		if ( c.correspond( v) == true){
-			return c.getCodeAssigned();
+			return c.codeAssigned;
 		}
 	}
 
