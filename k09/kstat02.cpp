@@ -46,11 +46,11 @@ template <typename T>
 class JudgeEqualTol;
 
 // TCount is int by default
-template <typename T, typename TCount>
+template <typename T, typename TCount = int>
 class FreqType;
 
 // TCode is int by default
-template <typename T, typename TCode>
+template <typename T, typename TCode = int>
 class RecodeTable;
 
 /*
@@ -157,7 +157,8 @@ public:
 // という前提がある。そうでないとカテゴリ間の
 // 重なりが生じてしまう。
 // 連続変数に用いる場合には、特定の機能を使うべし。
-template <typename T, typename TCount = int>
+// TCount is int by default
+template <typename T, typename TCount /* = int */>
 class FreqType {
 	
 private:
@@ -165,6 +166,9 @@ private:
 	map <T, TCount> freqmap;
 	std::function < bool( const T &, const T &) > areEqual;
 	TCount sumcount;
+
+	// Note that we specify int as TCode for RecodeTable
+	std::unique_ptr < RecodeTable<double, int> > rtablep;
 	
 public:
 	
@@ -189,10 +193,13 @@ public:
 	double medianFromFreq( void) const;
 	void modeFromFreq( std::vector <T> &) const;
 
+	void setFreqFromRecodeTable( const std::vector <double> &, const RecodeTable <double, int> &);
+
 };
 
 
-template <typename T, typename TCode = int>
+// TCode is int by default
+template <typename T, typename TCode /* = int */>
 class RecodeTable {
 
 private:
@@ -216,6 +223,7 @@ public:
 	void setAutoTableFromContVar( const std::vector <T> &);
 	std::vector <TCode> getPossibleCodeVec( void) const;
 	TCode getCodeForValue( T) const;
+	void print( ostream &, string = ","s) const;
 
 };
 
@@ -242,7 +250,8 @@ CodeType {
 
 	~CodeType( void){};
 
-	bool correspond( T v){
+	bool correspond( T v) const
+	{
 		if ( left < v && v < right){
 			return true;
 		}
@@ -253,6 +262,28 @@ CodeType {
 			return true;
 		}
 		return false;
+	}
+
+	string getRangeLabel( void) const
+	{
+
+		stringstream ss;
+		ss << left << " ";
+		if ( leftIn == true){
+			ss << "<=";
+		} else {
+			ss << "<";
+		}
+		ss << " x ";
+		if ( rightIn == true){
+			ss << "<=";
+		} else {
+			ss << "<";
+		}
+		ss << " " << right;
+
+		return ss.str();
+
 	}
 
 };
@@ -294,6 +325,9 @@ int countUniqueValues( const std::vector <T> &vec0)
 
 }
 
+// This function is more general than FreqType::setFreqFromRecodeType()
+// in the sense that this can allow <TOrigin, TCode> different than <double, int>.
+// But this function does not make FreqType have rtable itself.
 template <typename TOrigin, typename TCode, typename TCount>
 void
 createFreqFromRecodeTable( 
@@ -445,7 +479,7 @@ inline double unbiasedVar( const double *p, int n)
 
 /* ********** Definitions of Member Functions ********** */
 
-/* ********** class FreqType ********** */
+/* ---------- class FreqType ---------- */
 
 template <typename T, typename TCount>
 FreqType <T, TCount> ::
@@ -776,8 +810,30 @@ const
 	
 }
 
+// Note that rt0 should be of type RecodeTable <double, int>
+template <typename T, typename TCount>
+void 
+FreqType <T, TCount> :: 
+setFreqFromRecodeTable( const std::vector <double> &vec0, const RecodeTable <double, int> &rt0)
+{
 
-/* ********** class RecodeTable ********** */
+	clear();
+	rtablep.reset( new RecodeTable<double, int>( rt0));
+	std::vector <int> codeVec = rtablep->getPossibleCodeVec();
+	addPossibleKeys( codeVec);
+	for ( auto v : vec0){
+		if ( std::isnan( v)){
+			// do nothing
+		} else {
+			int codeToAdd = rtablep->getCodeForValue( v);
+			increment( codeToAdd);
+		}
+	}
+
+}
+
+
+/* ---------- class RecodeTable ---------- */
 
 // 自動で階級を作成する。
 // Nから階級の数を設定する。Stataの方式で。
@@ -850,7 +906,8 @@ getPossibleCodeVec( void) const
 template <typename T, typename TCode>
 TCode
 RecodeTable <T, TCode> :: 
-getCodeForValue( T v) const
+getCodeForValue( T v)
+const
 {
 
 	for ( auto c : codes){
@@ -871,6 +928,25 @@ getCodeForValue( T v) const
 	}
 
 	return ret;
+
+}
+
+// ストリームに出力する。
+// スペースでパディングはしない。sepで区切る。
+template <typename T, typename TCode>
+void
+RecodeTable <T, TCode> :: 
+print( ostream &os, string sep = ","s)
+const
+{
+
+	os << "Code" << sep << "Range" << std::endl;
+	for ( auto c : codes){
+		os << c.codeAssigned;
+		os << sep;
+		os << c.getRangeLabel();
+		os << endl;
+	}
 
 }
 
