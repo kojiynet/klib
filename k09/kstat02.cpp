@@ -39,12 +39,6 @@
 
 /* ********** Type Declarations: enum, class, etc. ********** */
 
-template <typename T>
-class JudgeEqual;
-
-template <typename T>
-class JudgeEqualTol;
-
 // TCount is int by default
 template <typename T, typename TCount = int>
 class FreqType;
@@ -60,6 +54,13 @@ struct
 RecodeTable ::
 CodeType;
 */
+
+template <typename T>
+class JudgeEqual;
+
+template <typename T>
+class JudgeEqualTol;
+
 
 /* ********** Function Declarations ********** */
 
@@ -85,8 +86,163 @@ double sum( const double *, int);
 double mean( const double *, int);
 double unbiasedVar( const double *, int);
 
+// このファイル内でよいのか？
+template <typename T>
+std::string toString( const T &);
+
 
 /* ********** Type Definitions: enum, class, etc. ********** */
+
+// frequency type
+// T is type for key, and TCount is type for count
+// This type is essentially for discrete variables,
+// with Tolerance for equality judgment being very small.
+// When applied to continuous variables, 
+// special methods should be used.
+// 基本的に離散変数用。
+// doubleなどに使う場合、等値判断のための
+// toleranceは0か非常に小さい値である、
+// という前提がある。そうでないとカテゴリ間の
+// 重なりが生じてしまう。
+// 連続変数に用いる場合には、特定の機能を使うべし。
+// TCount is int by default
+template <typename T, typename TCount /* = int */>
+class FreqType {
+	
+private:
+	
+	map <T, TCount> freqmap;
+	std::function < bool( const T &, const T &) > areEqual;
+	TCount sumcount;
+
+	// Note that we specify double as TOrigin for RecodeTable
+	// RecodeTableのTOriginとして、doubleを指定してしまっている。
+	// ここに柔軟性を持たせたいならば、rtablepがないクラスをつくり、
+	// それを基底クラスにして、派生クラスでテンプレート引数を増やしてrtablepを持たせるのが、素直だろう。
+	std::unique_ptr < RecodeTable<double, T> > rtablep;
+	
+public:
+	
+	FreqType( void);
+	~FreqType( void);
+	
+	void clear( void);
+	void setEqualExactly( void);
+	void setEqualWithTol( const T &);
+	bool addPossibleKey( const T &);
+	bool addPossibleKeys( const std::vector <T> &);
+	
+	void increment( const T &);
+	void addCount( const T &, const TCount &);
+	void addFreqType( const FreqType <T, TCount> &);
+	
+	void clearCount( void);
+	
+	TCount getSumCount( void) const;
+	void getVectors( std::vector <T> &, std::vector <TCount> &) const;
+	double meanFromFreq( void) const;
+	double medianFromFreq( void) const;
+	void modeFromFreq( std::vector <T> &) const;
+
+	void setFreqFromRecodeTable( const std::vector <double> &, const RecodeTable <double, T> &);
+
+	void printPadding( std::ostream &) const;
+
+};
+
+
+// TCode is int by default
+template <typename TOrigin, typename TCode /* = int */>
+class RecodeTable {
+
+private:
+
+	struct CodeType; // inner class; defined below
+
+	// 1要素はRecodeTableの1行分
+	std::vector <CodeType> codes; 
+
+	// "else"の場合の処理方法　（スコープを持つ列挙型）
+	enum class ElseType { Copy, AssignValue};
+	
+	ElseType toDoForElse; // "else"の場合の処理方法
+	TCode codeForElse; // "else"の場合に値を埋める場合の値（NaN以外）
+
+public:
+
+	RecodeTable( void){}
+	~RecodeTable( void){}
+
+	void setAutoTableFromContVar( const std::vector <TOrigin> &);
+	std::vector <TCode> getPossibleCodeVec( void) const;
+	TCode getCodeForValue( TOrigin) const;
+	std::string getRangeLabelForCode( TCode) const;
+	void print( ostream &, string = ","s) const;
+
+};
+
+
+template <typename TOrigin, typename TCode>
+struct
+RecodeTable <TOrigin, TCode> ::
+CodeType {
+
+// Fields:
+
+	TOrigin left; // the left-handside endpoint of the class
+	bool leftIn; // whether the endpoint value is inclusive
+
+	TOrigin right; // the right-handside endpoint of the class
+	bool rightIn; // whether the endpoint value is inclusive
+
+	TCode codeAssigned; // the code assigned to this class
+
+// Methods:
+
+	CodeType( TOrigin l0, bool li0, TOrigin r0, bool ri0, TCode ca0)
+	: left( l0), leftIn( li0), right( r0), rightIn( ri0), codeAssigned( ca0)
+	{}
+
+	~CodeType( void){};
+
+	bool correspond( TOrigin v) const
+	{
+		if ( left < v && v < right){
+			return true;
+		}
+		if ( leftIn == true && left == v){
+			return true;
+		}
+		if ( rightIn == true && right == v){
+			return true;
+		}
+		return false;
+	}
+
+	string getRangeLabel( void) const
+	{
+
+		stringstream ss;
+		ss << left << " ";
+		if ( leftIn == true){
+			ss << "<=";
+		} else {
+			ss << "<";
+		}
+		ss << " x ";
+		if ( rightIn == true){
+			ss << "<=";
+		} else {
+			ss << "<";
+		}
+		ss << " " << right;
+
+		return ss.str();
+
+	}
+
+};
+
 
 // 等値判断のためのファンクタクラス：==演算子で判断する。
 template <typename T>
@@ -130,162 +286,14 @@ public:
 	
 	void setTol( const T &tol0)
 	{
-
 		tol = tol0;
-
 	}
 
 	bool operator()( const T &a, const T &b)
-	{
-		
-		return ( ( a < b + tol) && ( a > b - tol));
-		
+	{		
+		return ( ( a < b + tol) && ( a > b - tol));		
 	}
 	
-};
-
-
-// frequency type
-// T is type for key, and TCount is type for count
-// This type is essentially for discrete variables,
-// with Tolerance for equality judgment being very small.
-// When applied to continuous variables, 
-// special methods should be used.
-// 基本的に離散変数用。
-// doubleなどに使う場合、等値判断のための
-// toleranceは0か非常に小さい値である、
-// という前提がある。そうでないとカテゴリ間の
-// 重なりが生じてしまう。
-// 連続変数に用いる場合には、特定の機能を使うべし。
-// TCount is int by default
-template <typename T, typename TCount /* = int */>
-class FreqType {
-	
-private:
-	
-	map <T, TCount> freqmap;
-	std::function < bool( const T &, const T &) > areEqual;
-	TCount sumcount;
-
-	// Note that we specify int as TCode for RecodeTable
-	std::unique_ptr < RecodeTable<double, int> > rtablep;
-	
-public:
-	
-	FreqType( void);
-	~FreqType( void);
-	
-	void clear( void);
-	void setEqualExactly( void);
-	void setEqualWithTol( const T &);
-	bool addPossibleKey( const T &);
-	bool addPossibleKeys( const std::vector <T> &);
-	
-	void increment( const T &);
-	void addCount( const T &, const TCount &);
-	void addFreqType( const FreqType <T, TCount> &);
-	
-	void clearCount( void);
-	
-	TCount getSumCount( void) const;
-	void getVectors( std::vector <T> &, std::vector <TCount> &) const;
-	double meanFromFreq( void) const;
-	double medianFromFreq( void) const;
-	void modeFromFreq( std::vector <T> &) const;
-
-	void setFreqFromRecodeTable( const std::vector <double> &, const RecodeTable <double, int> &);
-
-};
-
-
-// TCode is int by default
-template <typename T, typename TCode /* = int */>
-class RecodeTable {
-
-private:
-
-	struct CodeType; // inner class; defined below
-
-	// 1要素はRecodeTableの1行分
-	std::vector <CodeType> codes; 
-
-	// "else"の場合の処理方法　（スコープを持つ列挙型）
-	enum class ElseType { Copy, AssignValue};
-	
-	ElseType toDoForElse; // "else"の場合の処理方法
-	TCode codeForElse; // "else"の場合に値を埋める場合の値（NaN以外）
-
-public:
-
-	RecodeTable( void){}
-	~RecodeTable( void){}
-
-	void setAutoTableFromContVar( const std::vector <T> &);
-	std::vector <TCode> getPossibleCodeVec( void) const;
-	TCode getCodeForValue( T) const;
-	void print( ostream &, string = ","s) const;
-
-};
-
-template <typename T, typename TCode>
-struct
-RecodeTable <T, TCode> ::
-CodeType {
-
-// Fields:
-
-	T left; // the left-handside endpoint of the class
-	bool leftIn; // whether the endpoint value is inclusive
-
-	T right; // the right-handside endpoint of the class
-	bool rightIn; // whether the endpoint value is inclusive
-
-	TCode codeAssigned; // the code assigned to this class
-
-// Methods:
-
-	CodeType( T l0, bool li0, T r0, bool ri0, TCode ca0)
-	: left( l0), leftIn( li0), right( r0), rightIn( ri0), codeAssigned( ca0)
-	{}
-
-	~CodeType( void){};
-
-	bool correspond( T v) const
-	{
-		if ( left < v && v < right){
-			return true;
-		}
-		if ( leftIn == true && left == v){
-			return true;
-		}
-		if ( rightIn == true && right == v){
-			return true;
-		}
-		return false;
-	}
-
-	string getRangeLabel( void) const
-	{
-
-		stringstream ss;
-		ss << left << " ";
-		if ( leftIn == true){
-			ss << "<=";
-		} else {
-			ss << "<";
-		}
-		ss << " x ";
-		if ( rightIn == true){
-			ss << "<=";
-		} else {
-			ss << "<";
-		}
-		ss << " " << right;
-
-		return ss.str();
-
-	}
-
 };
 
 
@@ -325,9 +333,9 @@ int countUniqueValues( const std::vector <T> &vec0)
 
 }
 
-// This function is more general than FreqType::setFreqFromRecodeType()
-// in the sense that this can allow <TOrigin, TCode> different than <double, int>.
-// But this function does not make FreqType have rtable itself.
+// This function is more flexible than FreqType::setFreqFromRecodeType()
+// in the sense that this can allow <TOrigin> different from <double>.
+// But this function does not make FreqType store rtable itself.
 template <typename TOrigin, typename TCode, typename TCount>
 void
 createFreqFromRecodeTable( 
@@ -474,6 +482,17 @@ inline double unbiasedVar( const double *p, int n)
 	
 	return ( s2 / ( double)n - m * m) * ( double)n / ( double)( n - 1);
 	
+}
+
+// convert any type T into string
+// using stringstream
+template <typename T>
+std::string toString( const T &origin)
+{
+	std::stringstream ss;
+	ss.str( "");
+	ss << origin;
+	return ss.str();
 }
 
 
@@ -810,24 +829,114 @@ const
 	
 }
 
-// Note that rt0 should be of type RecodeTable <double, int>
+// Note that rt0 should be of RecodeTable <double, T>
 template <typename T, typename TCount>
 void 
 FreqType <T, TCount> :: 
-setFreqFromRecodeTable( const std::vector <double> &vec0, const RecodeTable <double, int> &rt0)
+setFreqFromRecodeTable( const std::vector <double> &vec0, const RecodeTable <double, T> &rt0)
 {
 
 	clear();
-	rtablep.reset( new RecodeTable<double, int>( rt0));
-	std::vector <int> codeVec = rtablep->getPossibleCodeVec();
+	rtablep.reset( new RecodeTable<double, T>( rt0));
+	std::vector <T> codeVec = rtablep->getPossibleCodeVec();
 	addPossibleKeys( codeVec);
 	for ( auto v : vec0){
 		if ( std::isnan( v)){
 			// do nothing
 		} else {
-			int codeToAdd = rtablep->getCodeForValue( v);
+			T codeToAdd = rtablep->getCodeForValue( v);
 			increment( codeToAdd);
 		}
+	}
+
+}
+
+// 本来は、Datasetに入れて表示したいが、また今度。
+template <typename T, typename TCount>
+void
+FreqType <T, TCount> :: 
+printPadding( std::ostream &os)
+const
+{
+
+	using namespace std;
+
+	vector < vector <string> > strcols;
+	vector <int> width;
+	int ncol;
+
+	if ( freqmap.size() < 1){
+		alert( "FreqType :: printPadding()");
+	}
+
+	// preparation
+
+	ncol = 2;
+	if ( bool( rtablep) == true){
+		// we will add range label column
+		ncol = 3;
+	}
+	strcols.resize( ncol);
+	
+	for ( auto &col : strcols){
+		col.reserve( freqmap.size() + 1);
+	}
+
+	{
+		int j = 0;
+		strcols[ j].push_back( "Code");
+		j++;
+		if ( bool( rtablep) == true){
+			strcols[ j].push_back( "Label");
+			j++;
+		}
+		strcols[ j].push_back( "Freq");
+	}
+
+	for ( auto pair : freqmap){
+
+		const T &key = pair.first;
+		const TCount &fre = pair.second;
+		
+		int j_col = 0;
+
+		// Code
+		strcols[ j_col].push_back( toString( key));
+		j_col++;
+
+		// Range Label (optional)
+		if ( bool( rtablep) == true){
+			string labelstr = rtablep->getRangeLabelForCode( pair.first);
+			strcols[ j_col].push_back( labelstr);
+			j_col++;
+		}
+
+		// Freq
+		strcols[ j_col].push_back( toString( fre));
+
+	}
+
+	width.resize( strcols.size());
+	for ( int i = 0; i < strcols.size(); i++){
+		int w0 = 0;
+		for ( const auto &s : strcols[ i]){
+			if ( w0 < s.size()){
+				w0 = s.size();
+			}
+		}
+		width[ i] = w0;
+	}
+	
+	// display
+	
+	os << setfill( ' ');	
+	for ( int i_row = 0; i_row < strcols[ 0].size(); i_row++){
+		for ( int j_col = 0; j_col < strcols.size(); j_col++){
+			os << setw( width[ j_col]);
+			os << strcols[ j_col][ i_row];
+			os << " ";
+		}
+		os << endl;
 	}
 
 }
@@ -839,27 +948,27 @@ setFreqFromRecodeTable( const std::vector <double> &vec0, const RecodeTable <dou
 // Nから階級の数を設定する。Stataの方式で。
 // 最小値と最大値の幅を出して、そこから階級幅を出す。
 // 各階級は、左端点を含み、右端点を含まない。
-template <typename T, typename TCode>
+template <typename TOrigin, typename TCode>
 void 
-RecodeTable <T, TCode> :: 
-setAutoTableFromContVar( const std::vector <T> &var0)
+RecodeTable <TOrigin, TCode> :: 
+setAutoTableFromContVar( const std::vector <TOrigin> &var0)
 {
 	
-	std::vector <T> vec = omitNan( var0);
+	std::vector <TOrigin> vec = omitNan( var0);
 	std::sort( vec.begin(), vec.end());
 	
-	T min = *( vec.begin());
-	T max = *( vec.end() - 1);
+	TOrigin min = *( vec.begin());
+	TOrigin max = *( vec.end() - 1);
 	int nobs = vec.size();
 
 	// This way to determine the number of classes is
 	// from Stata's histogram command.
 	int nclasses = std::round( std::min( std::sqrt( nobs), 10 * log10( nobs)));
 
-	T width = static_cast<T>( std::ceil( ( long double)( max - min) / ( long double)nclasses));
+	TOrigin width = static_cast<TOrigin>( std::ceil( ( long double)( max - min) / ( long double)nclasses));
 
-	T left = min;
-	T right;
+	TOrigin left = min;
+	TOrigin right;
 	codes.clear();
 	for ( int i = 1; left <= max; i++, left = right){
 
@@ -884,9 +993,9 @@ setAutoTableFromContVar( const std::vector <T> &var0)
 // codeになりうる値のvectorを返す。
 // ソートして返す。
 // ただし、Elseの場合のcodeは含めない。
-template <typename T, typename TCode>
+template <typename TOrigin, typename TCode>
 std::vector <TCode> 
-RecodeTable <T, TCode> :: 
+RecodeTable <TOrigin, TCode> :: 
 getPossibleCodeVec( void) const
 {
 
@@ -903,10 +1012,10 @@ getPossibleCodeVec( void) const
 }
 
 // vに対応するコードを返す。
-template <typename T, typename TCode>
+template <typename TOrigin, typename TCode>
 TCode
-RecodeTable <T, TCode> :: 
-getCodeForValue( T v)
+RecodeTable <TOrigin, TCode> :: 
+getCodeForValue( TOrigin v)
 const
 {
 
@@ -931,11 +1040,30 @@ const
 
 }
 
+// code0に対応するラベル返す。
+// code0に対応する範囲が登録されていなければ、空のstringを返す。
+template <typename TOrigin, typename TCode>
+std::string
+RecodeTable <TOrigin, TCode> :: 
+getRangeLabelForCode( TCode code0)
+const
+{
+
+	for ( const auto &c : codes){
+		if ( c.codeAssigned == code0){
+			return c.getRangeLabel();
+		}
+	}
+
+	return string( "");
+
+}
+
 // ストリームに出力する。
 // スペースでパディングはしない。sepで区切る。
-template <typename T, typename TCode>
+template <typename TOrigin, typename TCode>
 void
-RecodeTable <T, TCode> :: 
+RecodeTable <TOrigin, TCode> :: 
 print( ostream &os, string sep = ","s)
 const
 {
