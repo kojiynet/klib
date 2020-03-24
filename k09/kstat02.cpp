@@ -148,6 +148,10 @@ public:
 
 	void printPadding( std::ostream &) const;
 
+	// Note that obtained vectors should be
+	// parallel to those obtained by getVectors() above
+	void getRangeVectors( std::vector <double> &, std::vector <double> &) const;
+
 };
 
 
@@ -176,6 +180,9 @@ public:
 	void setAutoTableFromContVar( const std::vector <TOrigin> &);
 	std::vector <TCode> getPossibleCodeVec( void) const;
 	TCode getCodeForValue( TOrigin) const;
+
+	void getLeftRightForCode( TOrigin &, TOrigin &, TCode) const; 
+
 	std::string getRangeLabelForCode( TCode) const;
 	void print( ostream &, string = ","s) const;
 
@@ -941,6 +948,42 @@ const
 
 }
 
+// 各階級の左端と右端のVectorを得る。
+// RecodeTypeがない場合には空のVectorが返る。
+// Note that obtained vectors should be
+// parallel to those obtained by getVectors() above
+// これも、上記のprintPadding()と同様に、
+// 本来はDatasetに入れて処理したいが、また今度。
+template <typename T, typename TCount>
+void
+FreqType <T, TCount> :: 
+getRangeVectors( std::vector <double> &lvec, std::vector <double> &rvec)
+const
+{
+
+	lvec.clear();
+	rvec.clear();
+
+	if ( bool( rtablep) == false){
+		return;
+	}
+
+	lvec.reserve( freqmap.size());
+	rvec.reserve( freqmap.size());
+
+	for ( const auto &pair : freqmap){
+
+		const T &key = pair.first;
+		
+		double left, right;
+		rtable->getLeftRightForCode( left, right, key);
+		lvec.push_back( left);
+		rvec.push_back( right);
+
+	}
+
+}
+
 
 /* ---------- class RecodeTable ---------- */
 
@@ -1040,7 +1083,29 @@ const
 
 }
 
-// code0に対応するラベル返す。
+// code0に対応するleftとrightを返す。
+// code0に対応する範囲が登録されていなければ、nanを返す。
+template <typename TOrigin, typename TCode>
+void
+RecodeTable <TOrigin, TCode> :: 
+getLeftRightForCode( TOrigin &lret, TOrigin &rret, TCode code0)
+const
+{
+
+	for ( const auto &c : codes){
+		if ( c.codeAssigned == code0){
+			lret = c.left;
+			rret = c.right;
+			return; 
+		}
+	}
+
+	lret = std::numeric_limits<TOrigin>::quiet_NaN();
+	rret = std::numeric_limits<TOrigin>::quiet_NaN();
+
+}
+
+// code0に対応するラベルを返す。
 // code0に対応する範囲が登録されていなければ、空のstringを返す。
 template <typename TOrigin, typename TCode>
 std::string
