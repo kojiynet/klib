@@ -61,109 +61,12 @@ int main( int, char *[]);
 
 /* ********** Function Definitions ********** */
 
-// ↓消す
-/*
-std::vector <double>
-getGridPoints_Older( double min0, double max0)
-{
-
-	using namespace std;
-
-	vector <double> ret;
-
-	if ( min0 >= max0){ // error
-		return ret;
-	}
-
-	double width = max0 - min0;
-
-	// defining getInterval() 
-	struct { 
-		double operator()( double w)
-		{
-
-			double inte = w / 10.0; // 10個ぐらいの点を打つ。
-			double digits_m1 = floor( log10( inte));
-			double headdigit = ceil( inte / ( pow( 10.0, digits_m1))); // 切り上げた値の、先頭の1桁の数
-
-			// headdigitが1か2か5ならそのまま。
-			// それ以外なら、間隔を広げる方向に丸める。
-			if ( headdigit <= 2.0){
-				inte = headdigit * pow( 10.0, digits_m1);
-			} else if ( headdigit <= 5){
-				inte = 5.0 * pow( 10.0, digits_m1);
-			} else {
-				inte = pow( 10.0, digits_m1 + 1.0);
-			}
-
-			return inte;
-			
-		}
-	} getInterval;
-
-	// defining getPointsUsingBase()
-	struct {
-		void operator()( vector <double> &r, double b, double l0, double u0, double inte)
-		{
-			r.push_back( b); // 基準点。
-			// 正の方向と負の方向に、intervalをとりながら、点を挙げていく。
-			for ( double p = b + inte; p < u0; p += inte){
-				r.push_back( p);
-			}
-			for ( double p = b - inte; p > l0; p -= inte){
-				r.push_back( p);
-			}
-
-			sort( r.begin(), r.end());
-
-		}
-	} getPointsUsingBase; 
-
-	if ( min0 * max0 <= 0.0){ // min0とmax0で符号が違うか、いずれかがゼロ
-
-		double interval = getInterval( width);
-
-		getPointsUsingBase( ret, 0.0, min0, max0, interval);
-
-	} else { // min0とmax0で符号が同じ
-
-		double abmin0 = abs( min0);
-		double abmax0 = abs( max0);
-		double mindigits_m1 = floor( log10( abmin0));
-		double maxdigits_m1 = floor( log10( abmax0));
-		
-		if ( mindigits_m1 != maxdigits_m1){ // min0とmax0で桁数が異なる
-
-			double interval = getInterval( width);
-
-			double basepoint;
-
-			if ( min0 > 0){ // 正の場合 
-				basepoint = pow( 10.0, maxdigits_m1);
-			} else { // 負の場合
-				basepoint = -1.0 * pow( 10.0, mindigits_m1);
-			}
-
-			getPointsUsingBase( ret, basepoint, min0, max0, interval);
-			
-		} else { // min0とmax0で桁数が等しい
-
-			// ここを書く。
-
-		}
-
-
-	}
-
-	return ret;
-
-}
-*/
-
 // [min0, max0]に、いい感じの間隔で点をとる。
 // k0個以上で最小の点を返す。
+// newminがtrueのとき、得られた間隔に乗る新しいminも返す。
+// newmaxがtrueのとき、得られた間隔に乗る新しいmaxも返す。
 std::vector <double>
-getGridPoints( double min0, double max0, int k0 = 4)
+getGridPoints( double min0, double max0, int k0 = 4, bool newmin = true, bool newmax = true)
 {
 
 	using namespace std;
@@ -191,13 +94,15 @@ getGridPoints( double min0, double max0, int k0 = 4)
 	// 候補となる、intervalの先頭の桁の値
 	vector <double> headcands = { 5.0, 2.5, 2.0, 1.0};
 
+	double interval;
+
 	bool loop = true;
 	while ( loop){
 
 		for ( auto h : headcands){
 
 			ret.clear();
-			double interval = base10val * h;
+			interval = base10val * h;
 
 			// setting startpoint; to avoid startpoint being "-0", we do a little trick.
 			double startpoint = ceil( min0 / interval);
@@ -218,6 +123,26 @@ getGridPoints( double min0, double max0, int k0 = 4)
 
 		base10val /= 10.0;
 
+	}
+
+	if ( newmin == true){
+		double oldmin = ret.front();
+		if ( oldmin == min0){
+			// if the first point already obtained is equal to min0
+			// do nothing
+		} else {
+			ret.insert( ret.begin(), oldmin - interval);
+		}
+	}
+
+	if ( newmax == true){
+		double oldmax = ret.back();
+		if ( oldmax == max0){
+			// if the last point already obtained is equal to max0
+			// do nothing
+		} else {
+			ret.push_back( oldmax + interval);
+		}
 	}
 
 	return ret;
@@ -368,9 +293,6 @@ int main( int, char *[])
 	
 	};
 
-	koutputfile outsvg( "pclub03out.svg");
-	outsvg.open( false, false, true);
-
 	vector <string> svglines;
 
 	vector <int> codes;
@@ -381,21 +303,76 @@ int main( int, char *[])
 	ft.getRangeVectors( leftvec, rightvec);
 	Cambus cam;
 
+	double minval = leftvec.front();
+	double maxval = rightvec.back();
+
 	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
+
+	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
+	vector <double> gridpoints = getGridPoints( minval, maxval);
+	for ( auto d : gridpoints){
+		cout << d << endl;
+	}
+	cout << endl;
+
+
+
+	cam.setActual( 50, 50, 450, 450);
+	cam.setTheoretical( gridpoints.front(), 0, gridpoints.back(), 1200);
 
 	svglines.push_back( R"(<?xml version="1.0" encoding="UTF-8" ?>)"); // This should be exactly in the first line.
 	svglines.push_back( R"(<svg width="500px" height="500px" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">)");
-	svglines.push_back( R"(  <rect x="50" y="50" width="400" height="400" fill="Gainsboro" />)");
+	svglines.push_back( R"(  <rect x="50" y="50" width="400" height="400" fill="Whitesmoke" />)");
 
-	cam.setActual( 50, 50, 450, 450);
-	cam.setTheoretical( -100, -100, 10000, 1200);
 
-	// ちょうどいい間隔のグリッド線をひく。
-	// 同、軸の目盛を打つ。
 
+	// x軸の目盛を打つ。
+
+	for ( auto v : gridpoints){
+
+		Point theoP1( v, 1200); // left-top
+		Point theoP2( v, 0); // right-bottom 
+		Point actuP1 = cam.getActualFromTheoretical( theoP1);
+		Point actuP2 = cam.getActualFromTheoretical( theoP2);
+
+		stringstream ss;
+		ss << "  "
+		<< R"(<line)"
+		<< " "
+		<< R"(x1=")" << actuP1.x << R"(")"
+		<< " "
+		<< R"(y1=")" << actuP1.y << R"(")"
+		<< " "
+		<< R"(x2=")" << actuP2.x << R"(")"
+		<< " "
+		<< R"(y2=")" << actuP2.y << R"(")"
+		<< " "
+		<< R"(stroke=")" << "Lightgray" << R"(")"
+		<< " "
+		<< R"(stroke-width=")" << 1 << R"(")"
+		<< " "
+		<< R"(/>)";
+
+		svglines.push_back( ss.str());
+
+	}
+	
+
+
+
+
+/*
 	// ちょうどいい間隔と基準点の実験。
 	{
 		vector <double> gridpoints = getGridPoints( -12.34, 567.8);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+	
+	{
+		vector <double> gridpoints = getGridPoints( -12.34, 567.8, 4, false, false);
 		for ( auto d : gridpoints){
 			cout << d << endl;
 		}
@@ -441,7 +418,7 @@ int main( int, char *[])
 		}
 		cout << endl;
 	}
-
+*/
 
 	for ( int i = 0; i < codes.size(); i++){
 
@@ -451,8 +428,8 @@ int main( int, char *[])
 		Point actuP2 = cam.getActualFromTheoretical( theoP2);
 
 		stringstream ss;
-		ss << "  "
-		<< R"(<rect)"
+		ss << "  "s
+		<< R"(<rect)"s // tried to use string literal
 		<< " "
 		<< R"(x=")" << actuP1.x << R"(")"
 		<< " "
@@ -472,7 +449,7 @@ int main( int, char *[])
 
 	}
 
-	string title = "Frequency from pclub03.cpp";
+	string title = "Frequency from pclub03.cpp"s;
 
 	// Title 
 	{
@@ -515,8 +492,10 @@ int main( int, char *[])
 	                  " -->";
 	svglines.push_back( detector);
 
-	outsvg.writeLines( svglines);
 
+	koutputfile outsvg( "pclub03out.svg");
+	outsvg.open( false, false, true);
+	outsvg.writeLines( svglines);
 	outsvg.close();
 
 
