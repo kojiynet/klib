@@ -468,8 +468,8 @@ int main( int, char *[])
 		svglines.push_back( ss.str());
 
 	}
-/*	// 以下はアニメ用
-	for ( int i = 0; i < codes.size(); i++){
+	// 以下はアニメ用
+/*	for ( int i = 0; i < codes.size(); i++){
 
 		Point theoP1( leftvec[ i], counts[ i]); // left-top
 		Point theoP2( rightvec[ i], 0); // right-bottom 
@@ -492,22 +492,18 @@ int main( int, char *[])
 		
 		svglines.push_back( ss.str());
 
+		
 		ss.str( "");
-
 		ss << R"(      <animate attributeName="height" begin="0s" dur="1s" from="0" to=")" << ( actuP2.y - actuP1.y) << R"(" repeatCount="1"/>)";
-
 		svglines.push_back( ss.str());
 
 		ss.str( "");
-
 		ss << R"(      <animate attributeName="y" begin="0s" dur="1s" from=")" << 450 << R"(" to=")" << actuP1.y << R"(" repeatCount="1"/>)";
-
 		svglines.push_back( ss.str());
-
+		
 		svglines.push_back( R"(</rect>)");
 
-	}
-*/
+	}*/
 	// <g>で属性一括指定：終了
 	{
 		svglines.push_back( "  </g>");
@@ -532,7 +528,7 @@ int main( int, char *[])
 	}
 	for ( auto v : xgridpoints){
 
-		Point theoP( v, 0); // 本当はy軸の座標は要らないのだが。。
+		Point theoP( v, 0); // 本当はy軸の座標は要らないのだが。。→直す
 
 		Point actuP = cam.getActualFromTheoretical( theoP);
 
@@ -561,8 +557,10 @@ int main( int, char *[])
 		svglines.push_back( "  </g>");
 	}
 
+	// TODO: 軸の目盛ラベルのフォントサイズを自動調整
+
 	// x軸の目盛のラベル
-	double xlabelfontsize = 20; // とりあえずの値。
+	double xlabelfontsize = 14; // とりあえずの値。
 	// <g>で属性一括指定：開始
 	{
 		stringstream ss;
@@ -592,7 +590,7 @@ int main( int, char *[])
 		ss << "    "
 		<< R"(<text)"
 		<< " "
-		<< R"(x=")" << actuP.x << R"(")" // 中央揃えをする前提で座標を指定。
+		<< R"(x=")" << actuP.x << R"(")" // 左右方向に中央揃えをする前提で座標を指定。
 		<< " "
 		<< R"(y=")" << ( std::round( cam.actuYMax + ticklabelmargin)) << R"(")" // 描画領域の下端からmarginだけ離す。
 		<< ">"
@@ -607,8 +605,104 @@ int main( int, char *[])
 		svglines.push_back( "  </g>");
 	}
 
+	// y軸の目盛のヒゲ
+	// <g>で属性一括指定：開始
+	{
+		stringstream ss;
+		ss << "  "
+		   << R"(<g)"
+		   << " "
+		   << R"(stroke=")" << "Black" << R"(")"
+		   << " "
+		   << R"(stroke-width=")" << 1 << R"(")"
+		   << R"(>)";
+		svglines.push_back( ss.str());
+	}
+	for ( auto v : ygridpoints){
 
-	// 同様に、y軸も。
+		Point theoP( 0, v); // 本当はy軸の座標は要らないのだが。。
+
+		Point actuP = cam.getActualFromTheoretical( theoP);
+
+		double tickwidth = 5; // とりあえずの値。
+		
+		stringstream ss;
+
+		ss << "    "
+		<< R"(<line)"
+		<< " "
+		<< R"(x1=")" << cam.actuXMin << R"(")"
+		<< " "
+		<< R"(y1=")" << actuP.y << R"(")"
+		<< " "
+		<< R"(x2=")" << ( cam.actuXMin - tickwidth) << R"(")"
+		<< " "
+		<< R"(y2=")" << actuP.y << R"(")"
+		<< " "
+		<< R"(/>)";
+
+		svglines.push_back( ss.str());
+
+	}
+	// <g>で属性一括指定：終了
+	{
+		svglines.push_back( "  </g>");
+	}
+
+	// y軸の目盛ラベル
+	/*
+	文字列を回転させる方法を探った→svgtest04.svgとsvgtest05.svg
+	　svgtest04.svgで2つの方法を試したが、もっとシンプルにしたかった。
+	　svgtest05.svgで、transform属性を使えばよいことがわかった。
+	*/
+	// y軸の目盛のラベル
+	double ylabelfontsize = 14; // とりあえずの値。
+	// <g>で属性一括指定：開始
+	{
+		stringstream ss;
+		ss << "  "
+		   << R"(<g)"
+		   << " "
+		   << R"(font-family=")" << "Arial,san-serif" << R"(")"
+		   << " "
+		   << R"(font-size=")" << ylabelfontsize << R"(")" 
+		   << " "
+		   << R"(text-anchor="end")"
+		   << " "
+		   << R"(dominant-baseline="central")"
+		   << R"(>)";
+		svglines.push_back( ss.str());
+	}
+	for ( auto v : ygridpoints){
+
+		Point theoP( 0, v); // 本当はy軸の座標は要らないのだが。。
+
+		Point actuP = cam.getActualFromTheoretical( theoP);
+
+		double ticklabelmargin = 10; // とりあえずの値。
+		
+		stringstream ss;
+
+		ss << "    "
+		<< R"(<text)"
+		<< " "
+		<< R"(x=")" << ( std::round( cam.actuXMin - ticklabelmargin)) << R"(")" // 描画領域の左端からmarginだけ離す。
+		<< " "
+		<< R"(y=")" << actuP.y << R"(")" // 上下方向に中央揃えをする前提で座標を指定。
+		<< " "
+		<< R"(transform="rotate(270 )" << ( std::round( cam.actuXMin - ticklabelmargin)) << " " << actuP.y << R"(")" // 回転の中心が各点で異なるので、一括指定できない。
+		<< ">"
+		<< v // 桁数はどうなるのか。。 
+		<< R"(</text>)";
+
+		svglines.push_back( ss.str());
+
+	}
+	// <g>で属性一括指定：終了
+	{
+		svglines.push_back( "  </g>");
+	}
+
 
 
 
