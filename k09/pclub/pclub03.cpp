@@ -291,6 +291,14 @@ int main( int, char *[])
 
 		}
 	
+		// 実際の座標系での中点のyを返す。
+		double getActualMidY( void)
+		{
+
+			return ( actuYMin + actuHeight / 2);
+
+		}
+	
 	};
 
 	vector <string> svglines;
@@ -308,7 +316,7 @@ int main( int, char *[])
 	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
 
 	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
-	// TODO: 範囲を、5%ぐらい外側にしたい。描画と枠線が重なる場合がありうるので。
+
 	// x軸
 	double xminval = leftvec.front();
 	double xmaxval = rightvec.back();
@@ -324,22 +332,34 @@ int main( int, char *[])
 		cout << d << endl;
 	}
 	cout << endl;
+	
+	// 描画範囲は、Gridpointsのさらに5%外側にする。
+	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
+	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
+	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
+	
+	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
+	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
+	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
+	
+
 
 
 
 	// SVGファイル化の開始
 
 	cam.setActual( 50, 50, 450, 450);
-	cam.setTheoretical( xgridpoints.front(), ygridpoints.front(), xgridpoints.back(), ygridpoints.back());
+	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
 
 	svglines.push_back( R"(<?xml version="1.0" encoding="UTF-8" ?>)"); // This should be exactly in the first line.
 	svglines.push_back( R"(<svg width="500px" height="500px" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">)");
+	svglines.push_back( R"(<rect x="0" y="0" width="500" height="500" fill="whitesmoke" stroke-width="0" />)");
 
 
 	// 背景の描画開始
 
 	// 背景色だけ塗る。
-	svglines.push_back( R"(  <rect x="50" y="50" width="400" height="400" fill="Whitesmoke" stroke-width="0" />)");
+	svglines.push_back( R"(  <rect x="50" y="50" width="400" height="400" fill="gainsboro" stroke-width="0" />)");
 
 	// x軸の目盛を示すグリッド線
 	// <g>で属性一括指定：開始
@@ -348,7 +368,7 @@ int main( int, char *[])
 		ss << "  "
 		   << R"(<g)"
 		   << " "
-		   << R"(stroke=")" << "Lightgray" << R"(")"
+		   << R"(stroke=")" << "silver" << R"(")"
 		   << " "
 		   << R"(stroke-width=")" << 1 << R"(")"
 		   << R"(>)";
@@ -356,8 +376,8 @@ int main( int, char *[])
 	}
 	for ( auto v : xgridpoints){
 
-		Point theoP1( v, ygridpoints.back()); // left-top
-		Point theoP2( v, ygridpoints.front()); // right-bottom 
+		Point theoP1( v, theoYMax); // top
+		Point theoP2( v, theoYMin); // bottom 
 		Point actuP1 = cam.getActualFromTheoretical( theoP1);
 		Point actuP2 = cam.getActualFromTheoretical( theoP2);
 
@@ -391,7 +411,7 @@ int main( int, char *[])
 		ss << "  "
 		   << R"(<g)"
 		   << " "
-		   << R"(stroke=")" << "Lightgray" << R"(")"
+		   << R"(stroke=")" << "silver" << R"(")"
 		   << " "
 		   << R"(stroke-width=")" << 1 << R"(")"
 		   << R"(>)";
@@ -399,8 +419,8 @@ int main( int, char *[])
 	}
 	for ( auto v : ygridpoints){
 
-		Point theoP1( xgridpoints.front(), v); // left
-		Point theoP2( xgridpoints.back(), v); // right 
+		Point theoP1( theoXMin, v); // left
+		Point theoP2( theoXMax, v); // right 
 		Point actuP1 = cam.getActualFromTheoretical( theoP1);
 		Point actuP2 = cam.getActualFromTheoretical( theoP2);
 
@@ -511,7 +531,11 @@ int main( int, char *[])
 
 	// メインの情報の描画終了
 
+
+
 	// 周辺情報記載の開始
+
+	// TODO: フォントサイズを自動調整→優先順位が低い。フォントサイズ固定でもいい。
 
 	// x軸の目盛のヒゲ
 	// <g>で属性一括指定：開始
@@ -557,7 +581,8 @@ int main( int, char *[])
 		svglines.push_back( "  </g>");
 	}
 
-	// TODO: 軸の目盛ラベルのフォントサイズを自動調整
+
+	// TODO: 軸の単位の記載→優先順位は低い。
 
 	// x軸の目盛のラベル
 	double xlabelfontsize = 14; // とりあえずの値。
@@ -573,7 +598,7 @@ int main( int, char *[])
 		   << " "
 		   << R"(text-anchor="middle")"
 		   << " "
-		   << R"(dominant-baseline="text-before-edge")"
+		   << R"(dominant-baseline="text-after-edge")" // こうしないとIEやWordで崩れる。。
 		   << R"(>)";
 		svglines.push_back( ss.str());
 	}
@@ -592,7 +617,7 @@ int main( int, char *[])
 		<< " "
 		<< R"(x=")" << actuP.x << R"(")" // 左右方向に中央揃えをする前提で座標を指定。
 		<< " "
-		<< R"(y=")" << ( std::round( cam.actuYMax + ticklabelmargin)) << R"(")" // 描画領域の下端からmarginだけ離す。
+		<< R"(y=")" << ( std::round( cam.actuYMax + ticklabelmargin + xlabelfontsize)) << R"(")" // 描画領域の下端からmarginだけ離す。
 		<< ">"
 		<< v // 桁数はどうなるのか。。 
 		<< R"(</text>)";
@@ -667,9 +692,9 @@ int main( int, char *[])
 		   << " "
 		   << R"(font-size=")" << ylabelfontsize << R"(")" 
 		   << " "
-		   << R"(text-anchor="end")"
+		   << R"(text-anchor="middle")" // 文字列の左右方向の中心で位置決めする。
 		   << " "
-		   << R"(dominant-baseline="central")"
+		   << R"(dominant-baseline="text-after-edge")" // 文字列の下端で位置決めする。
 		   << R"(>)";
 		svglines.push_back( ss.str());
 	}
@@ -690,7 +715,7 @@ int main( int, char *[])
 		<< " "
 		<< R"(y=")" << actuP.y << R"(")" // 上下方向に中央揃えをする前提で座標を指定。
 		<< " "
-		<< R"(transform="rotate(270 )" << ( std::round( cam.actuXMin - ticklabelmargin)) << " " << actuP.y << R"(")" // 回転の中心が各点で異なるので、一括指定できない。
+		<< R"(transform="rotate(270 )" << ( std::round( cam.actuXMin - ticklabelmargin)) << " " << actuP.y << ")" << R"(")" // 回転の中心が各点で異なるので、一括指定できない。
 		<< ">"
 		<< v // 桁数はどうなるのか。。 
 		<< R"(</text>)";
@@ -710,12 +735,12 @@ int main( int, char *[])
 
 	// Title 
 
+	// グラフタイトル
 	string title = "Frequency from pclub03.cpp"s;
-
 	{
 		stringstream ss;
 		double fontsize = std::floor( cam.actuWidth * 0.7 / title.size() * 2.0); // 描画領域の幅のうち、7割を占めるぐらいのサイズ
-		if ( fontsize >= cam.actuYMin * 0.7){ // 余白の70%より大きいのはダメ
+		if ( fontsize >= cam.actuYMin * 0.7){ // 余白の高さの70%より大きいのはダメ
 			fontsize = cam.actuYMin * 0.7;
 		}
 		ss << "  "
@@ -741,11 +766,11 @@ int main( int, char *[])
 
 
 	// x軸タイトルを書く。
-	string axislabel = "Household Income";
+	string xaxislabel = "Household Income";
 	{
 
 		double fontsize = 20; // とりあえずの値。
-		double axislabelmargin = 30; // とりあえずの値。
+		double xaxislabelmargin = 30; // とりあえずの値。
 		
 		stringstream ss;
 
@@ -754,7 +779,7 @@ int main( int, char *[])
 		<< " "
 		<< R"(x=")" << ( std::round( cam.getActualMidX())) << R"(")" // 中央揃えをするので。
 		<< " "
-		<< R"(y=")" << ( std::round( cam.actuYMax + axislabelmargin)) << R"(")" // 描画領域の下端からmarginだけ離す。
+		<< R"(y=")" << ( std::round( cam.actuYMax + xaxislabelmargin + fontsize)) << R"(")" // 描画領域の下端からmarginだけ離す。
 		<< " "
 		<< R"(font-family=")" << "Arial,san-serif" << R"(")"
 		<< " "
@@ -762,16 +787,50 @@ int main( int, char *[])
 		<< " "
 		<< R"(text-anchor="middle")"
 		<< " "
-		<< R"(dominant-baseline="text-before-edge")"
+		<< R"(dominant-baseline="text-after-edge")" // これでないとIEやWordで崩れる。
 		<< ">"
-		<< axislabel 
+		<< xaxislabel 
 		<< R"(</text>)";
 
 		svglines.push_back( ss.str());
 
 	}
 
-	// y軸も。
+
+	// y軸タイトルを書く。
+	string yaxislabel = "#Cases";
+	{
+
+		double fontsize = 20; // とりあえずの値。
+		double yaxislabelmargin = 30; // とりあえずの値。
+		
+		stringstream ss;
+		double x = std::round( cam.actuXMin - yaxislabelmargin);
+		double y = std::round( cam.getActualMidY());
+
+		ss << "  "
+		<< R"(<text)"
+		<< " "
+		<< R"(x=")" << x << R"(")" // 描画領域の左端からmarginだけ離す。
+		<< " "
+		<< R"(y=")" << y << R"(")" // 中央揃えをするので。
+		<< " "
+		<< R"(font-family=")" << "Arial,san-serif" << R"(")"
+		<< " "
+		<< R"(font-size=")" << fontsize << R"(")" 
+		<< " "
+		<< R"(text-anchor="middle")"
+		<< " "
+		<< R"(dominant-baseline="text-after-edge")"
+		<< " "
+		<< R"(transform="rotate(270 )" << x << " " << y << ")" << R"(")" 
+		<< ">"
+		<< yaxislabel 
+		<< R"(</text>)";
+
+		svglines.push_back( ss.str());
+
+	}
 
 	// 周辺情報記載の終了
 
