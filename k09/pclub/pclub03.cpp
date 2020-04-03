@@ -283,6 +283,24 @@ int main( int, char *[])
 
 		}
 
+		// x座標のみを算出→論理座標系表現から実際の座標系表現を作成。
+		double getXActualFromTheoretical( double x0)
+		{
+
+			double retx = ( x0 - theoXMin) / theoWidth  * actuWidth  + actuXMin; 
+			return retx;
+
+		}
+
+		// y座標のみを算出→論理座標系表現から実際の座標系表現を作成。
+		double getYActualFromTheoretical( double y0)
+		{
+			
+			double rety = ( theoYMax - y0) / theoHeight * actuHeight + actuYMin; 
+			return rety;
+
+		}
+
 		// 実際の座標系での中点のxを返す。
 		double getActualMidX( void)
 		{
@@ -488,8 +506,9 @@ int main( int, char *[])
 		svglines.push_back( ss.str());
 
 	}
-	// 以下はアニメ用
-/*	for ( int i = 0; i < codes.size(); i++){
+/*	// 以下はアニメ用
+	// SVGアニメをパワポに貼っても動かないらしい。
+	for ( int i = 0; i < codes.size(); i++){
 
 		Point theoP1( leftvec[ i], counts[ i]); // left-top
 		Point theoP2( rightvec[ i], 0); // right-bottom 
@@ -552,9 +571,7 @@ int main( int, char *[])
 	}
 	for ( auto v : xgridpoints){
 
-		Point theoP( v, 0); // 本当はy軸の座標は要らないのだが。。→直す
-
-		Point actuP = cam.getActualFromTheoretical( theoP);
+		double actuX = cam.getXActualFromTheoretical( v);
 
 		double tickheight = 5; // とりあえずの値。
 		
@@ -563,11 +580,11 @@ int main( int, char *[])
 		ss << "    "
 		<< R"(<line)"
 		<< " "
-		<< R"(x1=")" << actuP.x << R"(")"
+		<< R"(x1=")" << actuX << R"(")"
 		<< " "
 		<< R"(y1=")" << cam.actuYMax << R"(")"
 		<< " "
-		<< R"(x2=")" << actuP.x << R"(")"
+		<< R"(x2=")" << actuX << R"(")"
 		<< " "
 		<< R"(y2=")" << ( cam.actuYMax + tickheight) << R"(")"
 		<< " "
@@ -584,6 +601,9 @@ int main( int, char *[])
 
 	// TODO: 軸の単位の記載→優先順位は低い。
 
+	// textタグで、IEやWordはdominant-baselineが効かないらしい。
+	// （指定してもdominant-baseline="alphabetic"扱いになる。）
+
 	// x軸の目盛のラベル
 	double xlabelfontsize = 14; // とりあえずの値。
 	// <g>で属性一括指定：開始
@@ -598,7 +618,7 @@ int main( int, char *[])
 		   << " "
 		   << R"(text-anchor="middle")"
 		   << " "
-		   << R"(dominant-baseline="text-after-edge")" // こうしないとIEやWordで崩れる。。
+		   << R"(dominant-baseline="alphabetic")" // こうしないとIEやWordで崩れる。。
 		   << R"(>)";
 		svglines.push_back( ss.str());
 	}
@@ -617,7 +637,9 @@ int main( int, char *[])
 		<< " "
 		<< R"(x=")" << actuP.x << R"(")" // 左右方向に中央揃えをする前提で座標を指定。
 		<< " "
-		<< R"(y=")" << ( std::round( cam.actuYMax + ticklabelmargin + xlabelfontsize)) << R"(")" // 描画領域の下端からmarginだけ離す。
+		// 描画領域の下端からmarginだけ離す。
+		// alphabeticの基線は、このフォントの場合、本当のフォント下端より20%上なので、その分をずらしている。
+		<< R"(y=")" << ( std::round( cam.actuYMax + ticklabelmargin + xlabelfontsize * 0.8)) << R"(")" 
 		<< ">"
 		<< v // 桁数はどうなるのか。。 
 		<< R"(</text>)";
@@ -645,10 +667,12 @@ int main( int, char *[])
 	}
 	for ( auto v : ygridpoints){
 
-		Point theoP( 0, v); // 本当はy軸の座標は要らないのだが。。
+		double actuY = cam.getYActualFromTheoretical( v);
+
+/*		Point theoP( 0, v); // 本当はy軸の座標は要らないのだが。。
 
 		Point actuP = cam.getActualFromTheoretical( theoP);
-
+*/
 		double tickwidth = 5; // とりあえずの値。
 		
 		stringstream ss;
@@ -658,11 +682,11 @@ int main( int, char *[])
 		<< " "
 		<< R"(x1=")" << cam.actuXMin << R"(")"
 		<< " "
-		<< R"(y1=")" << actuP.y << R"(")"
+		<< R"(y1=")" << actuY /*actuP.y*/ << R"(")"
 		<< " "
 		<< R"(x2=")" << ( cam.actuXMin - tickwidth) << R"(")"
 		<< " "
-		<< R"(y2=")" << actuP.y << R"(")"
+		<< R"(y2=")" << actuY /*actuP.y*/ << R"(")"
 		<< " "
 		<< R"(/>)";
 
@@ -694,28 +718,29 @@ int main( int, char *[])
 		   << " "
 		   << R"(text-anchor="middle")" // 文字列の左右方向の中心で位置決めする。
 		   << " "
-		   << R"(dominant-baseline="text-after-edge")" // 文字列の下端で位置決めする。
+		   << R"(dominant-baseline="alphabetic")" 
 		   << R"(>)";
 		svglines.push_back( ss.str());
 	}
 	for ( auto v : ygridpoints){
 
-		Point theoP( 0, v); // 本当はy軸の座標は要らないのだが。。
-
-		Point actuP = cam.getActualFromTheoretical( theoP);
+		double actuY = cam.getYActualFromTheoretical( v);
 
 		double ticklabelmargin = 10; // とりあえずの値。
+
+		// alphabetic基線に合わせるために20%ずらしている。
+		double xplace = std::round( cam.actuXMin - ticklabelmargin - ylabelfontsize * 0.2);
 		
 		stringstream ss;
 
 		ss << "    "
 		<< R"(<text)"
 		<< " "
-		<< R"(x=")" << ( std::round( cam.actuXMin - ticklabelmargin)) << R"(")" // 描画領域の左端からmarginだけ離す。
+		<< R"(x=")" << xplace << R"(")" // 描画領域の左端からmarginだけ離す。
 		<< " "
-		<< R"(y=")" << actuP.y << R"(")" // 上下方向に中央揃えをする前提で座標を指定。
+		<< R"(y=")" << actuY << R"(")" // 上下方向に中央揃えをする前提で座標を指定。
 		<< " "
-		<< R"(transform="rotate(270 )" << ( std::round( cam.actuXMin - ticklabelmargin)) << " " << actuP.y << ")" << R"(")" // 回転の中心が各点で異なるので、一括指定できない。
+		<< R"(transform="rotate(270 )" << xplace << " " << actuY << ")" << R"(")" // 回転の中心が各点で異なるので、一括指定できない。
 		<< ">"
 		<< v // 桁数はどうなるのか。。 
 		<< R"(</text>)";
