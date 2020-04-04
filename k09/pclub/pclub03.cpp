@@ -49,6 +49,16 @@ using namespace std;
 
 int main( int, char *[]);
 
+void drawHistogramToSvg(
+	const std::string &,
+	const std::vector <double> &, const std::vector <double> &,
+	const std::vector <int> &,
+	bool = false
+);
+
+std::vector <double>
+getGridPoints( double, double, int = 4, bool = true, bool = true);
+
 
 /* ********** Class Definitions ********** */
 
@@ -60,94 +70,6 @@ int main( int, char *[]);
 
 
 /* ********** Function Definitions ********** */
-
-// [min0, max0]に、いい感じの間隔で点をとる。
-// k0個以上で最小の点を返す。
-// newminがtrueのとき、得られた間隔に乗る新しいminも返す。
-// newmaxがtrueのとき、得られた間隔に乗る新しいmaxも返す。
-std::vector <double>
-getGridPoints( double min0, double max0, int k0 = 4, bool newmin = true, bool newmax = true)
-{
-
-	using namespace std;
-
-	vector <double> ret;
-	
-	// この数以上の最小の点を返すようにする。
-	int minnpoints = k0; 
-
-	// error
-	if ( min0 >= max0){ 
-		alert( "getGripPoints()");
-		return ret;
-	}
-
-	double max0ab = abs( max0);
-	double min0ab = abs( min0);
-
-	// max0abとmin0abのうち大きい方は何桁？（その値マイナス1）
-	double digits_m1 = floor( log10( max( max0ab, min0ab)));
-
-	// 基準となる10のべき乗値
-	double base10val = pow( 10.0, digits_m1);
-
-	// 候補となる、intervalの先頭の桁の値
-	vector <double> headcands = { 5.0, 2.5, 2.0, 1.0};
-
-	double interval;
-
-	bool loop = true;
-	while ( loop){
-
-		for ( auto h : headcands){
-
-			ret.clear();
-			interval = base10val * h;
-
-			// setting startpoint; to avoid startpoint being "-0", we do a little trick.
-			double startpoint = ceil( min0 / interval);
-			if ( startpoint > -1.0 && startpoint < 1.0){
-				startpoint = 0.0;
-			}
-			startpoint *= interval;
-
-			for ( double p = startpoint; p <= max0; p += interval){
-				ret.push_back( p);
-			}
-			if ( ret.size() >= minnpoints){
-				loop = false;
-				break;
-			}
-
-		}
-
-		base10val /= 10.0;
-
-	}
-
-	if ( newmin == true){
-		double oldmin = ret.front();
-		if ( oldmin == min0){
-			// if the first point already obtained is equal to min0
-			// do nothing
-		} else {
-			ret.insert( ret.begin(), oldmin - interval);
-		}
-	}
-
-	if ( newmax == true){
-		double oldmax = ret.back();
-		if ( oldmax == max0){
-			// if the last point already obtained is equal to max0
-			// do nothing
-		} else {
-			ret.push_back( oldmax + interval);
-		}
-	}
-
-	return ret;
-
-}
 
 int main( int, char *[])
 {
@@ -225,7 +147,107 @@ int main( int, char *[])
 
 
 	// ヒストグラムをつくりたい。
-	// SVGの座標系をいじるところから。
+
+	vector <int> codes;
+	vector <int> counts;
+	vector <double> leftvec;
+	vector <double> rightvec;
+	ft.getVectors( codes, counts);
+	ft.getRangeVectors( leftvec, rightvec);
+
+	drawHistogramToSvg( "pclub03out01.svg", leftvec, rightvec, counts);
+	drawHistogramToSvg( "pclub03out02.svg", leftvec, rightvec, counts, true); // アニメバージョン
+
+	return 0;
+
+
+
+	// 今のRecodeTableには、左端・右端がない（無限大）という指定ができない。
+
+	// FreqTypeにはすごく小さい機能だけを持たせることにして、
+	// 別にFreqTableTypeか何かをつくって、そこに、RecodeTableを持たせたり、
+	// それをもとにしたFreqを作らせたりしてもよいかも。
+
+	/*
+	度数分布表をつくる。kstatを見て。
+	　別に、連続変数用の機能をつける。
+	　　start/end, width, bin を指定する方式。
+	　　自動で、スタージェスの公式を使う方式？
+	　　※Stataでは、min{ sqrt(N), 10*ln(N)/ln(10)}らしいので、それでいく。
+	　　階級の端点の表を与える方式。
+	*/
+
+
+/*
+	// ちょうどいい間隔と基準点の実験。
+	{
+		vector <double> gridpoints = getGridPoints( -12.34, 567.8);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+	
+	{
+		vector <double> gridpoints = getGridPoints( -12.34, 567.8, 4, false, false);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+	
+	{
+		vector <double> gridpoints = getGridPoints( -1234.5, 567.8);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+
+	{
+		vector <double> gridpoints = getGridPoints( -1234.5, 567.8, 5);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+
+	{
+		vector <double> gridpoints = getGridPoints( 123.5, 5678.9);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+
+	{
+		vector <double> gridpoints = getGridPoints( -80001.0, -299.9);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+
+	{
+		vector <double> gridpoints = getGridPoints( -80001.0, -299.9, 5);
+		for ( auto d : gridpoints){
+			cout << d << endl;
+		}
+		cout << endl;
+	}
+*/
+}
+
+void drawHistogramToSvg(
+	const std::string &fn,
+	const std::vector <double> &leftvec, const std::vector <double> &rightvec,
+	const std::vector <int> &counts,
+	bool animated /*= false*/
+)
+{
+
+	using namespace std;
+
 	// SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
 	// （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
 	// svgタグのサイズとviewBoxのサイズを合わせたい。
@@ -319,17 +341,10 @@ int main( int, char *[])
 	
 	};
 
+	
 	vector <string> svglines;
-
-	vector <int> codes;
-	vector <int> counts;
-	vector <double> leftvec;
-	vector <double> rightvec;
-	ft.getVectors( codes, counts);
-	ft.getRangeVectors( leftvec, rightvec);
 	Cambus cam;
 
-	
 
 	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
 
@@ -482,67 +497,66 @@ int main( int, char *[])
 		   << R"(>)";
 		svglines.push_back( ss.str());
 	}
-	for ( int i = 0; i < codes.size(); i++){
+	for ( int i = 0; i < counts.size(); i++){
 
 		Point theoP1( leftvec[ i], counts[ i]); // left-top
 		Point theoP2( rightvec[ i], 0); // right-bottom 
 		Point actuP1 = cam.getActualFromTheoretical( theoP1);
 		Point actuP2 = cam.getActualFromTheoretical( theoP2);
 
-		stringstream ss;
-		ss << "    "
-		<< R"(<rect)"
-		<< " "
-		<< R"(x=")" << actuP1.x << R"(")"
-		<< " "
-	    << R"(y=")" << actuP1.y << R"(")"
-		<< " "
-		<< R"(width=")" << ( actuP2.x - actuP1.x) << R"(")"
-		<< " "
-		<< R"(height=")" << ( actuP2.y - actuP1.y) << R"(")"
-		<< " "
-		<< R"(/>)";
+
+		if ( animated == true){
+
+			// 以下はアニメ用
+			// SVGアニメをパワポに貼っても動かないらしい。
+			
+			stringstream ss;
+			
+			ss << "    "
+			<< R"(<rect)"
+			<< " "
+			<< R"(x=")" << actuP1.x << R"(")"
+			<< " "
+			<< R"(y=")" << actuP1.y << R"(")"
+			<< " "
+			<< R"(width=")" << ( actuP2.x - actuP1.x) << R"(")"
+			<< " "
+			<< R"(height=")" << ( actuP2.y - actuP1.y) << R"(")"
+			<< " "
+			<< R"(>)";
+			svglines.push_back( ss.str());
+			
+			ss.str( "");
+			ss << R"(      <animate attributeName="height" begin="0s" dur="1s" from="0" to=")" << ( actuP2.y - actuP1.y) << R"(" repeatCount="1"/>)";
+			svglines.push_back( ss.str());
+
+			ss.str( "");
+			ss << R"(      <animate attributeName="y" begin="0s" dur="1s" from=")" << actuP2.y << R"(" to=")" << actuP1.y << R"(" repeatCount="1"/>)";
+			svglines.push_back( ss.str());
+			
+			svglines.push_back( R"(</rect>)");
+
+		} else {
+
+			stringstream ss;
+			ss << "    "
+			<< R"(<rect)"
+			<< " "
+			<< R"(x=")" << actuP1.x << R"(")"
+			<< " "
+			<< R"(y=")" << actuP1.y << R"(")"
+			<< " "
+			<< R"(width=")" << ( actuP2.x - actuP1.x) << R"(")"
+			<< " "
+			<< R"(height=")" << ( actuP2.y - actuP1.y) << R"(")"
+			<< " "
+			<< R"(/>)";
+			svglines.push_back( ss.str());
+
+		}
 		
-		svglines.push_back( ss.str());
 
 	}
-/*	// 以下はアニメ用
-	// SVGアニメをパワポに貼っても動かないらしい。
-	for ( int i = 0; i < codes.size(); i++){
-
-		Point theoP1( leftvec[ i], counts[ i]); // left-top
-		Point theoP2( rightvec[ i], 0); // right-bottom 
-		Point actuP1 = cam.getActualFromTheoretical( theoP1);
-		Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-		stringstream ss;
-		ss << "    "
-		<< R"(<rect)"
-		<< " "
-		<< R"(x=")" << actuP1.x << R"(")"
-		<< " "
-	    << R"(y=")" << actuP1.y << R"(")"
-		<< " "
-		<< R"(width=")" << ( actuP2.x - actuP1.x) << R"(")"
-		<< " "
-		<< R"(height=")" << ( actuP2.y - actuP1.y) << R"(")"
-		<< " "
-		<< R"(>)";
-		
-		svglines.push_back( ss.str());
-
-		
-		ss.str( "");
-		ss << R"(      <animate attributeName="height" begin="0s" dur="1s" from="0" to=")" << ( actuP2.y - actuP1.y) << R"(" repeatCount="1"/>)";
-		svglines.push_back( ss.str());
-
-		ss.str( "");
-		ss << R"(      <animate attributeName="y" begin="0s" dur="1s" from=")" << 450 << R"(" to=")" << actuP1.y << R"(" repeatCount="1"/>)";
-		svglines.push_back( ss.str());
-		
-		svglines.push_back( R"(</rect>)");
-
-	}*/
 	// <g>で属性一括指定：終了
 	{
 		svglines.push_back( "  </g>");
@@ -755,9 +769,6 @@ int main( int, char *[])
 
 
 
-
-
-
 	// Title 
 
 	// グラフタイトル
@@ -873,89 +884,98 @@ int main( int, char *[])
 	                  " -->";
 	svglines.push_back( detector);
 
-	koutputfile outsvg( "pclub03out.svg");
+	koutputfile outsvg( fn);
 	outsvg.open( false, false, true);
 	outsvg.writeLines( svglines);
 	outsvg.close();
 
-	return 0;
+}
 
+// [min0, max0]に、いい感じの間隔で点をとる。
+// k0個以上で最小の点を返す。
+// newminがtrueのとき、得られた間隔に乗る新しいminも返す。
+// newmaxがtrueのとき、得られた間隔に乗る新しいmaxも返す。
+std::vector <double>
+getGridPoints( double min0, double max0, int k0 /*= 4*/, bool newmin /*= true*/, bool newmax /*= true*/)
+{
 
+	using namespace std;
 
-	// 今のRecodeTableには、左端・右端がない（無限大）という指定ができない。
-
-	// FreqTypeにはすごく小さい機能だけを持たせることにして、
-	// 別にFreqTableTypeか何かをつくって、そこに、RecodeTableを持たせたり、
-	// それをもとにしたFreqを作らせたりしてもよいかも。
-
-	/*
-	度数分布表をつくる。kstatを見て。
-	　別に、連続変数用の機能をつける。
-	　　start/end, width, bin を指定する方式。
-	　　自動で、スタージェスの公式を使う方式？
-	　　※Stataでは、min{ sqrt(N), 10*ln(N)/ln(10)}らしいので、それでいく。
-	　　階級の端点の表を与える方式。
-	*/
-
-
-/*
-	// ちょうどいい間隔と基準点の実験。
-	{
-		vector <double> gridpoints = getGridPoints( -12.34, 567.8);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
+	vector <double> ret;
 	
-	{
-		vector <double> gridpoints = getGridPoints( -12.34, 567.8, 4, false, false);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-	
-	{
-		vector <double> gridpoints = getGridPoints( -1234.5, 567.8);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
+	// この数以上の最小の点を返すようにする。
+	int minnpoints = k0; 
+
+	// error
+	if ( min0 >= max0){ 
+		alert( "getGripPoints()");
+		return ret;
 	}
 
-	{
-		vector <double> gridpoints = getGridPoints( -1234.5, 567.8, 5);
-		for ( auto d : gridpoints){
-			cout << d << endl;
+	double max0ab = abs( max0);
+	double min0ab = abs( min0);
+
+	// max0abとmin0abのうち大きい方は何桁？（その値マイナス1）
+	double digits_m1 = floor( log10( max( max0ab, min0ab)));
+
+	// 基準となる10のべき乗値
+	double base10val = pow( 10.0, digits_m1);
+
+	// 候補となる、intervalの先頭の桁の値
+	vector <double> headcands = { 5.0, 2.5, 2.0, 1.0};
+
+	double interval;
+
+	bool loop = true;
+	while ( loop){
+
+		for ( auto h : headcands){
+
+			ret.clear();
+			interval = base10val * h;
+
+			// setting startpoint; to avoid startpoint being "-0", we do a little trick.
+			double startpoint = ceil( min0 / interval);
+			if ( startpoint > -1.0 && startpoint < 1.0){
+				startpoint = 0.0;
+			}
+			startpoint *= interval;
+
+			for ( double p = startpoint; p <= max0; p += interval){
+				ret.push_back( p);
+			}
+			if ( ret.size() >= minnpoints){
+				loop = false;
+				break;
+			}
+
 		}
-		cout << endl;
+
+		base10val /= 10.0;
+
 	}
 
-	{
-		vector <double> gridpoints = getGridPoints( 123.5, 5678.9);
-		for ( auto d : gridpoints){
-			cout << d << endl;
+	if ( newmin == true){
+		double oldmin = ret.front();
+		if ( oldmin == min0){
+			// if the first point already obtained is equal to min0
+			// do nothing
+		} else {
+			ret.insert( ret.begin(), oldmin - interval);
 		}
-		cout << endl;
 	}
 
-	{
-		vector <double> gridpoints = getGridPoints( -80001.0, -299.9);
-		for ( auto d : gridpoints){
-			cout << d << endl;
+	if ( newmax == true){
+		double oldmax = ret.back();
+		if ( oldmax == max0){
+			// if the last point already obtained is equal to max0
+			// do nothing
+		} else {
+			ret.push_back( oldmax + interval);
 		}
-		cout << endl;
 	}
 
-	{
-		vector <double> gridpoints = getGridPoints( -80001.0, -299.9, 5);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-*/
+	return ret;
 
 }
 
