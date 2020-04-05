@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg width="500px" height="500px" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+<rect x="0" y="0" width="500" height="500" fill="whitesmoke" stroke="whitesmoke" />
+<rect x="50" y="50" width="400" height="400" fill="gainsboro" stroke="gainsboro" />
+  <g stroke="silver" stroke-width="1">
+    <line x1="68.1818" y1="50" x2="68.1818" y2="450" />
+    <line x1="128.788" y1="50" x2="128.788" y2="450" />
+    <line x1="189.394" y1="50" x2="189.394" y2="450" />
+    <line x1="250" y1="50" x2="250" y2="450" />
+    <line x1="310.606" y1="50" x2="310.606" y2="450" />
+    <line x1="371.212" y1="50" x2="371.212" y2="450" />
+    <line x1="431.818" y1="50" x2="431.818" y2="450" />
+  </g>
+  <g stroke="silver" stroke-width="1">
+    <line x1="50" y1="431.818" x2="450" y2="431.818" />
+    <line x1="50" y1="340.909" x2="450" y2="340.909" />
+    <line x1="50" y1="250" x2="450" y2="250" />
+    <line x1="50" y1="159.091" x2="450" y2="159.091" />
+    <line x1="50" y1="68.1818" x2="450" y2="68.1818" />
+  </g>
+  <g stroke="Gray" fill="Gray">
+    <rect x="68.1818" y="403.636" width="8.48485" height="28.1818" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="28.1818" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="403.636" repeatCount="1"/>
+</rect>
+    <rect x="76.6667" y="357.273" width="8.48485" height="74.5455" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="74.5455" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="357.273" repeatCount="1"/>
+</rect>
+    <rect x="85.1515" y="276.364" width="8.48485" height="155.455" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="155.455" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="276.364" repeatCount="1"/>
+</rect>
+    <rect x="93.6364" y="265.455" width="8.48485" height="166.364" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="166.364" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="265.455" repeatCount="1"/>
+</rect>
+    <rect x="102.121" y="181.818" width="8.48485" height="250" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="250" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="181.818" repeatCount="1"/>
+</rect>
+    <rect x="110.606" y="120.909" width="8.48485" height="310.909" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="310.909" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="120.909" repeatCount="1"/>
+</rect>
+    <rect x="119.091" y="187.273" width="8.48485" height="244.545" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="244.545" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="187.273" repeatCount="1"/>
+</rect>
+    <rect x="127.576" y="131.818" width="8.48485" height="300" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="300" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="131.818" repeatCount="1"/>
+</rect>
+    <rect x="136.061" y="191.818" width="8.48485" height="240" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="240" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="191.818" repeatCount="1"/>
+</rect>
+    <rect x="144.545" y="287.273" width="8.48485" height="144.545" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="144.545" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="287.273" repeatCount="1"/>
+</rect>
+    <rect x="153.03" y="188.182" width="8.48485" height="243.636" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="243.636" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="188.182" repeatCount="1"/>
+</rect>
+    <rect x="161.515" y="262.727" width="8.48485" height="169.091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="169.091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="262.727" repeatCount="1"/>
+</rect>
+    <rect x="170" y="275.455" width="8.48485" height="156.364" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="156.364" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="275.455" repeatCount="1"/>
+</rect>
+    <rect x="178.485" y="361.818" width="8.48485" height="70" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="70" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="361.818" repeatCount="1"/>
+</rect>
+    <rect x="186.97" y="262.727" width="8.48485" height="169.091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="169.091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="262.727" repeatCount="1"/>
+</rect>
+    <rect x="195.455" y="373.636" width="8.48485" height="58.1818" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="58.1818" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="373.636" repeatCount="1"/>
+</rect>
+    <rect x="203.939" y="406.364" width="8.48485" height="25.4545" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="25.4545" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="406.364" repeatCount="1"/>
+</rect>
+    <rect x="212.424" y="359.091" width="8.48485" height="72.7273" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="72.7273" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="359.091" repeatCount="1"/>
+</rect>
+    <rect x="220.909" y="394.545" width="8.48485" height="37.2727" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="37.2727" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="394.545" repeatCount="1"/>
+</rect>
+    <rect x="229.394" y="420.909" width="8.48485" height="10.9091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="10.9091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="420.909" repeatCount="1"/>
+</rect>
+    <rect x="237.879" y="407.273" width="8.48485" height="24.5455" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="24.5455" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="407.273" repeatCount="1"/>
+</rect>
+    <rect x="246.364" y="384.545" width="8.48485" height="47.2727" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="47.2727" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="384.545" repeatCount="1"/>
+</rect>
+    <rect x="254.848" y="417.273" width="8.48485" height="14.5455" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="14.5455" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="417.273" repeatCount="1"/>
+</rect>
+    <rect x="263.333" y="422.727" width="8.48485" height="9.09091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="9.09091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="422.727" repeatCount="1"/>
+</rect>
+    <rect x="271.818" y="420.909" width="8.48485" height="10.9091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="10.9091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="420.909" repeatCount="1"/>
+</rect>
+    <rect x="280.303" y="415.455" width="8.48485" height="16.3636" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="16.3636" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="415.455" repeatCount="1"/>
+</rect>
+    <rect x="288.788" y="429.091" width="8.48485" height="2.72727" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="2.72727" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="429.091" repeatCount="1"/>
+</rect>
+    <rect x="297.273" y="419.091" width="8.48485" height="12.7273" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="12.7273" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="419.091" repeatCount="1"/>
+</rect>
+    <rect x="305.758" y="410" width="8.48485" height="21.8182" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="21.8182" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="410" repeatCount="1"/>
+</rect>
+    <rect x="314.242" y="429.091" width="8.48485" height="2.72727" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="2.72727" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="429.091" repeatCount="1"/>
+</rect>
+    <rect x="322.727" y="430.909" width="8.48485" height="0.909091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="0.909091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="430.909" repeatCount="1"/>
+</rect>
+    <rect x="331.212" y="425.455" width="8.48485" height="6.36364" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="6.36364" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="425.455" repeatCount="1"/>
+</rect>
+    <rect x="339.697" y="430" width="8.48485" height="1.81818" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="1.81818" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="430" repeatCount="1"/>
+</rect>
+    <rect x="348.182" y="428.182" width="8.48485" height="3.63636" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="3.63636" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="428.182" repeatCount="1"/>
+</rect>
+    <rect x="356.667" y="430" width="8.48485" height="1.81818" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="1.81818" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="430" repeatCount="1"/>
+</rect>
+    <rect x="365.152" y="430.909" width="8.48485" height="0.909091" >
+      <animate attributeName="height" begin="0s" dur="1s" from="0" to="0.909091" repeatCount="1"/>
+      <animate attributeName="y" begin="0s" dur="1s" from="431.818" to="430.909" repeatCount="1"/>
+</rect>
+  </g>
+  <g stroke="Black" stroke-width="1">
+    <line x1="68.1818" y1="450" x2="68.1818" y2="455" />
+    <line x1="128.788" y1="450" x2="128.788" y2="455" />
+    <line x1="189.394" y1="450" x2="189.394" y2="455" />
+    <line x1="250" y1="450" x2="250" y2="455" />
+    <line x1="310.606" y1="450" x2="310.606" y2="455" />
+    <line x1="371.212" y1="450" x2="371.212" y2="455" />
+    <line x1="431.818" y1="450" x2="431.818" y2="455" />
+  </g>
+  <g font-family="Arial,san-serif" font-size="14" text-anchor="middle" dominant-baseline="alphabetic">
+    <text x="68.1818" y="471">0</text>
+    <text x="128.788" y="471">500</text>
+    <text x="189.394" y="471">1000</text>
+    <text x="250" y="471">1500</text>
+    <text x="310.606" y="471">2000</text>
+    <text x="371.212" y="471">2500</text>
+    <text x="431.818" y="471">3000</text>
+  </g>
+  <g stroke="Black" stroke-width="1">
+    <line x1="50" y1="431.818" x2="45" y2="431.818" />
+    <line x1="50" y1="340.909" x2="45" y2="340.909" />
+    <line x1="50" y1="250" x2="45" y2="250" />
+    <line x1="50" y1="159.091" x2="45" y2="159.091" />
+    <line x1="50" y1="68.1818" x2="45" y2="68.1818" />
+  </g>
+  <g font-family="Arial,san-serif" font-size="14" text-anchor="middle" dominant-baseline="alphabetic">
+    <text x="37" y="431.818" transform="rotate(270 37 431.818)">0</text>
+    <text x="37" y="340.909" transform="rotate(270 37 340.909)">100</text>
+    <text x="37" y="250" transform="rotate(270 37 250)">200</text>
+    <text x="37" y="159.091" transform="rotate(270 37 159.091)">300</text>
+    <text x="37" y="68.1818" transform="rotate(270 37 68.1818)">400</text>
+  </g>
+  <text x="250" y="45" font-family="Arial,san-serif" font-size="13" text-anchor="middle" dominant-baseline="text-after-edge">Frequency - restricted to v less than 2500</text>
+  <text x="250" y="500" font-family="Arial,san-serif" font-size="20" text-anchor="middle" dominant-baseline="text-after-edge">Household Income</text>
+  <text x="20" y="250" font-family="Arial,san-serif" font-size="20" text-anchor="middle" dominant-baseline="text-after-edge" transform="rotate(270 20 250)">#Cases</text>
+  <rect x="50" y="50" width="400" height="400" fill-opacity="0" stroke="Black" stroke-width="1" />
+</svg>
+<!-- 文字コード識別用 -->
