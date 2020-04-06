@@ -83,11 +83,12 @@ public:
 		filecontent.push_back( s0);
 	}
 
-	// defined late because of dependency problem
+	// defined later because of dependency problem
 	void addRect( const SvgRect &); 
+	void addLine( const SvgLine &); 
 
 /*
-	void addLine( const SvgLine &);
+	以下、つくっていく。
 	void addText( const SvgText &);
 	void addGroup( const SvgGroup &);
 */
@@ -150,14 +151,63 @@ public:
 		return ret;
 	}
 
-// もっと書く。
+};
 
-} ;
+// 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
+class SvgLine {
+
+private:
+	
+	std::vector <std::string> attrvec;
+
+public:
+
+	SvgLine( double x1, double y1, double x2, double y2)
+	 : attrvec()
+	{
+		std::stringstream ss;
+		ss << R"(x1=")" << x1 << R"(")" << " "
+		   << R"(y1=")" << y1 << R"(")" << " "
+		   << R"(x2=")" << x2 << R"(")" << " "
+		   << R"(y2=")" << y2 << R"(")";
+		attrvec.push_back( ss.str());
+	}
+
+	~SvgLine( void){}
+
+	void addFill( const std::string &s0)
+	{
+		attrvec.push_back( R"(fill=")" + s0 + R"(")");
+	}
+
+	void addStroke( const std::string &s0)
+	{
+		attrvec.push_back( R"(stroke=")" + s0 + R"(")");
+	}
+
+	void addStrokewidth( double v0)
+	{
+		std::stringstream ss;
+		ss << R"(stroke-width=")" << v0 << R"(")";
+		attrvec.push_back( ss.str());
+	}
+
+	std::string getContent( void) const
+	{
+		std::string ret = "<line";
+		for ( const auto &attr : attrvec){
+			ret += " ";
+			ret += attr;
+		}
+		ret += " />";
+		return ret;
+	}
+
+};
 
 
 /*
 以下未実装
-class SvgLine {} ;
 class SvgText {} ;
 class SvgGroup {} ;
 */
@@ -505,6 +555,22 @@ void drawHistogramToSvg(
 	}
 
 	// x軸の目盛を示すグリッド線
+	// <g>での一括指定はまだ。
+	for ( auto v : xgridpoints){
+
+		Point theoP1( v, theoYMax); // top
+		Point theoP2( v, theoYMin); // bottom 
+		Point actuP1 = cam.getActualFromTheoretical( theoP1);
+		Point actuP2 = cam.getActualFromTheoretical( theoP2);
+
+		SvgLine l1( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
+		l1.addStroke( "silver");
+		l1.addStrokewidth( 1);
+		svgf.addLine( l1);;
+
+	}
+
+	/*
 	// <g>で属性一括指定：開始
 	{
 		stringstream ss;
@@ -545,9 +611,27 @@ void drawHistogramToSvg(
 	{
 		svgf.addFileContent( "  </g>");
 	}
+	*/
 
 
 	// y軸の目盛を示すグリッド線
+	// <g>での一括指定はまだ。
+	for ( auto v : ygridpoints){
+
+		Point theoP1( theoXMin, v); // left
+		Point theoP2( theoXMax, v); // right 
+		Point actuP1 = cam.getActualFromTheoretical( theoP1);
+		Point actuP2 = cam.getActualFromTheoretical( theoP2);
+
+		SvgLine l2( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
+		l2.addStroke( "silver");
+		l2.addStrokewidth( 1);
+		svgf.addLine( l2);;
+
+	}
+
+
+	/*
 	// <g>で属性一括指定：開始
 	{
 		stringstream ss;
@@ -588,6 +672,7 @@ void drawHistogramToSvg(
 	{
 		svgf.addFileContent( "  </g>");
 	}
+	*/
 
 	// 背景の描画終了
 
@@ -746,45 +831,23 @@ void drawHistogramToSvg(
 	// TODO: フォントサイズを自動調整→優先順位が低い。フォントサイズ固定でもいい。
 
 	// x軸の目盛のヒゲ
-	// <g>で属性一括指定：開始
-	{
-		stringstream ss;
-		ss << "  "
-		   << R"(<g)"
-		   << " "
-		   << R"(stroke=")" << "Black" << R"(")"
-		   << " "
-		   << R"(stroke-width=")" << 1 << R"(")"
-		   << R"(>)";
-		svgf.addFileContent( ss.str());
-	}
+	// <g>での一括指定はまだ。
 	for ( auto v : xgridpoints){
 
 		double actuX = cam.getXActualFromTheoretical( v);
 
 		double tickheight = 5; // とりあえずの値。
-		
-		stringstream ss;
 
-		ss << "    "
-		<< R"(<line)"
-		<< " "
-		<< R"(x1=")" << actuX << R"(")"
-		<< " "
-		<< R"(y1=")" << cam.actuYMax << R"(")"
-		<< " "
-		<< R"(x2=")" << actuX << R"(")"
-		<< " "
-		<< R"(y2=")" << ( cam.actuYMax + tickheight) << R"(")"
-		<< " "
-		<< R"(/>)";
+		double x1 = actuX;
+		double y1 = cam.actuYMax;
+		double x2 = actuX;
+		double y2 = cam.actuYMax + tickheight;
 
-		svgf.addFileContent( ss.str());
+		SvgLine li( x1, y1, x2, y2);
+		li.addStroke( "black"); // 一括指定対象
+		li.addStrokewidth( 1); // 一括指定対象
+		svgf.addLine( li);		
 
-	}
-	// <g>で属性一括指定：終了
-	{
-		svgf.addFileContent( "  </g>");
 	}
 
 
@@ -842,49 +905,23 @@ void drawHistogramToSvg(
 	}
 
 	// y軸の目盛のヒゲ
-	// <g>で属性一括指定：開始
-	{
-		stringstream ss;
-		ss << "  "
-		   << R"(<g)"
-		   << " "
-		   << R"(stroke=")" << "Black" << R"(")"
-		   << " "
-		   << R"(stroke-width=")" << 1 << R"(")"
-		   << R"(>)";
-		svgf.addFileContent( ss.str());
-	}
+	// <g>での一括指定はまだ。
 	for ( auto v : ygridpoints){
 
 		double actuY = cam.getYActualFromTheoretical( v);
 
-/*		Point theoP( 0, v); // 本当はy軸の座標は要らないのだが。。
+		double ticklength = 5; // とりあえずの値。
 
-		Point actuP = cam.getActualFromTheoretical( theoP);
-*/
-		double tickwidth = 5; // とりあえずの値。
-		
-		stringstream ss;
+		double x1 = cam.actuXMin;
+		double y1 = actuY;
+		double x2 = cam.actuXMin - ticklength;
+		double y2 = actuY; 
 
-		ss << "    "
-		<< R"(<line)"
-		<< " "
-		<< R"(x1=")" << cam.actuXMin << R"(")"
-		<< " "
-		<< R"(y1=")" << actuY /*actuP.y*/ << R"(")"
-		<< " "
-		<< R"(x2=")" << ( cam.actuXMin - tickwidth) << R"(")"
-		<< " "
-		<< R"(y2=")" << actuY /*actuP.y*/ << R"(")"
-		<< " "
-		<< R"(/>)";
+		SvgLine li( x1, y1, x2, y2);
+		li.addStroke( "black"); // 一括指定対象
+		li.addStrokewidth( 1); // 一括指定対象
+		svgf.addLine( li);		
 
-		svgf.addFileContent( ss.str());
-
-	}
-	// <g>で属性一括指定：終了
-	{
-		svgf.addFileContent( "  </g>");
 	}
 
 	// y軸の目盛ラベル
@@ -1164,5 +1201,10 @@ getGridPoints( double min0, double max0, int k0 /*= 4*/, bool newmin /*= true*/,
 void SvgFile :: addRect( const SvgRect &r0)
 {
 	filecontent.push_back( r0.getContent());
+}
+
+void SvgFile :: addLine( const SvgLine &l0)
+{
+	filecontent.push_back( l0.getContent());
 }
 
