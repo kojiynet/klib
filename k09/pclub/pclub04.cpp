@@ -86,10 +86,10 @@ public:
 	// defined later because of dependency problem
 	void addRect( const SvgRect &); 
 	void addLine( const SvgLine &); 
+	void addText( const SvgText &);
 
 /*
-	以下、つくっていく。
-	void addText( const SvgText &);
+	これは優先順位が低い。
 	void addGroup( const SvgGroup &);
 */
 	std::vector <std::string> getFileContent( void)
@@ -137,6 +137,13 @@ public:
 	{
 		std::stringstream ss;
 		ss << R"(stroke-width=")" << v0 << R"(")";
+		attrvec.push_back( ss.str());
+	}
+
+	void addFillopacity( double v0)
+	{
+		std::stringstream ss;
+		ss << R"(fill-opacity=")" << v0 << R"(")";
 		attrvec.push_back( ss.str());
 	}
 
@@ -200,6 +207,87 @@ public:
 			ret += attr;
 		}
 		ret += " />";
+		return ret;
+	}
+
+};
+
+// 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
+class SvgText {
+
+private:
+	
+	std::string text; 
+	std::vector <std::string> attrvec;
+
+public:
+
+	SvgText( double x0, double y0, const string &s0)
+	 : text( s0), attrvec()
+	{
+		std::stringstream ss;
+		ss << R"(x=")" << x0 << R"(")" << " "
+		   << R"(y=")" << y0 << R"(")";
+		attrvec.push_back( ss.str());
+	}
+
+	SvgText( double x0, double y0, double v0)
+	 : text(), attrvec()
+	{
+		{
+			std::stringstream ss;
+			ss << v0;
+			text.assign( ss.str());
+		}
+		{
+			std::stringstream ss;
+			ss << R"(x=")" << x0 << R"(")" << " "
+			   << R"(y=")" << y0 << R"(")";
+			attrvec.push_back( ss.str());
+		}
+	}
+
+	~SvgText( void){}
+
+	void addFontfamily( const std::string &s0)
+	{
+		attrvec.push_back( R"(font-family=")" + s0 + R"(")");
+	}	
+
+	void addFontsize( double v0)
+	{
+		std::stringstream ss;
+		ss << v0;
+		attrvec.push_back( R"(font-size=")" + ss.str() + R"(")");
+	}	
+
+	void addTextanchor( const std::string &s0)
+	{
+		attrvec.push_back( R"(text-anchor=")" + s0 + R"(")");
+	}	
+
+	void addDominantbaseline( const std::string &s0)
+	{
+		attrvec.push_back( R"(dominant-baseline=")" + s0 + R"(")");
+	}	
+
+	void addRotate( double d0, double x0, double y0)
+	{
+		std::stringstream ss;
+		ss << R"(transform="rotate)" << "(" << d0 << " " << x0 << " " << y0 << ")" << R"(")";
+		attrvec.push_back( ss.str());
+	}	
+
+	std::string getContent( void) const
+	{
+		std::string ret = "<text";
+		for ( const auto &attr : attrvec){
+			ret += " ";
+			ret += attr;
+		}
+		ret += ">";
+		ret += text;
+		ret += "</text>";
 		return ret;
 	}
 
@@ -534,6 +622,7 @@ void drawHistogramToSvg(
 	cam.setActual( 50, 50, 450, 450);
 	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
 
+	// ↓こういうのを書き直す。
 	svgf.addFileContent( R"(<?xml version="1.0" encoding="UTF-8" ?>)"); // This should be exactly in the first line.
 	svgf.addFileContent( R"(<svg width="500px" height="500px" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">)");
 
@@ -778,48 +867,6 @@ void drawHistogramToSvg(
 
 		}
 
-		/*
-		// <g>で属性一括指定：開始
-		{
-			stringstream ss;
-			ss << "  "
-			<< R"(<g)"
-			<< " "
-			<< R"(stroke=")" << "Gray" << R"(")"
-			<< " "
-			<< R"(fill=")" << "Gray" << R"(")" 
-			<< R"(>)";
-			svgf.addFileContent( ss.str());
-		}
-		for ( int i = 0; i < counts.size(); i++){
-
-			Point theoP1( leftvec[ i], counts[ i]); // left-top
-			Point theoP2( rightvec[ i], 0); // right-bottom 
-			Point actuP1 = cam.getActualFromTheoretical( theoP1);
-			Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-			stringstream ss;
-			ss << "    "
-			<< R"(<rect)"
-			<< " "
-			<< R"(x=")" << actuP1.x << R"(")"
-			<< " "
-			<< R"(y=")" << actuP1.y << R"(")"
-			<< " "
-			<< R"(width=")" << ( actuP2.x - actuP1.x) << R"(")"
-			<< " "
-			<< R"(height=")" << ( actuP2.y - actuP1.y) << R"(")"
-			<< " "
-			<< R"(/>)";
-			svgf.addFileContent( ss.str());	
-
-		}
-		// <g>で属性一括指定：終了
-		{
-			svgf.addFileContent( "  </g>");
-		}		
-		*/
-
 	}
 
 	// メインの情報の描画終了
@@ -858,50 +905,25 @@ void drawHistogramToSvg(
 
 	// x軸の目盛のラベル
 	double xlabelfontsize = 14; // とりあえずの値。
-	// <g>で属性一括指定：開始
-	{
-		stringstream ss;
-		ss << "  "
-		   << R"(<g)"
-		   << " "
-		   << R"(font-family=")" << "Arial,san-serif" << R"(")"
-		   << " "
-		   << R"(font-size=")" << xlabelfontsize << R"(")" 
-		   << " "
-		   << R"(text-anchor="middle")"
-		   << " "
-		   << R"(dominant-baseline="alphabetic")" // こうしないとIEやWordで崩れる。。
-		   << R"(>)";
-		svgf.addFileContent( ss.str());
-	}
 	for ( auto v : xgridpoints){
 
-		Point theoP( v, 0); // 本当はy軸の座標は要らないのだが。。
-
-		Point actuP = cam.getActualFromTheoretical( theoP);
-
 		double ticklabelmargin = 10; // とりあえずの値。
-		
-		stringstream ss;
 
-		ss << "    "
-		<< R"(<text)"
-		<< " "
-		<< R"(x=")" << actuP.x << R"(")" // 左右方向に中央揃えをする前提で座標を指定。
-		<< " "
+		double actuX = cam.getXActualFromTheoretical( v);
+
 		// 描画領域の下端からmarginだけ離す。
 		// alphabeticの基線は、このフォントの場合、本当のフォント下端より20%上なので、その分をずらしている。
-		<< R"(y=")" << ( std::round( cam.actuYMax + ticklabelmargin + xlabelfontsize * 0.8)) << R"(")" 
-		<< ">"
-		<< v // 桁数はどうなるのか。。 
-		<< R"(</text>)";
+		double actuY = std::round( cam.actuYMax + ticklabelmargin + xlabelfontsize * 0.8);
 
-		svgf.addFileContent( ss.str());
+		// vの桁数はどうなるのか。。 
 
-	}
-	// <g>で属性一括指定：終了
-	{
-		svgf.addFileContent( "  </g>");
+		SvgText t0( actuX, actuY, v); // vはstringに変換される。
+		t0.addFontfamily( "Arial,san-serif");
+		t0.addFontsize( xlabelfontsize);
+		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		svgf.addText( t0);		
+
 	}
 
 	// y軸の目盛のヒゲ
@@ -930,153 +952,86 @@ void drawHistogramToSvg(
 	　svgtest04.svgで2つの方法を試したが、もっとシンプルにしたかった。
 	　svgtest05.svgで、transform属性を使えばよいことがわかった。
 	*/
-	// y軸の目盛のラベル
 	double ylabelfontsize = 14; // とりあえずの値。
-	// <g>で属性一括指定：開始
-	{
-		stringstream ss;
-		ss << "  "
-		   << R"(<g)"
-		   << " "
-		   << R"(font-family=")" << "Arial,san-serif" << R"(")"
-		   << " "
-		   << R"(font-size=")" << ylabelfontsize << R"(")" 
-		   << " "
-		   << R"(text-anchor="middle")" // 文字列の左右方向の中心で位置決めする。
-		   << " "
-		   << R"(dominant-baseline="alphabetic")" 
-		   << R"(>)";
-		svgf.addFileContent( ss.str());
-	}
 	for ( auto v : ygridpoints){
-
-		double actuY = cam.getYActualFromTheoretical( v);
 
 		double ticklabelmargin = 10; // とりあえずの値。
 
+		double actuY = cam.getYActualFromTheoretical( v);
+
 		// alphabetic基線に合わせるために20%ずらしている。
-		double xplace = std::round( cam.actuXMin - ticklabelmargin - ylabelfontsize * 0.2);
-		
-		stringstream ss;
+		double actuX = std::round( cam.actuXMin - ticklabelmargin - ylabelfontsize * 0.2);
 
-		ss << "    "
-		<< R"(<text)"
-		<< " "
-		<< R"(x=")" << xplace << R"(")" // 描画領域の左端からmarginだけ離す。
-		<< " "
-		<< R"(y=")" << actuY << R"(")" // 上下方向に中央揃えをする前提で座標を指定。
-		<< " "
-		<< R"(transform="rotate(270 )" << xplace << " " << actuY << ")" << R"(")" // 回転の中心が各点で異なるので、一括指定できない。
-		<< ">"
-		<< v // 桁数はどうなるのか。。 
-		<< R"(</text>)";
-
-		svgf.addFileContent( ss.str());
+		SvgText t0( actuX, actuY, v); // vはstringに変換される。
+		t0.addFontfamily( "Arial,san-serif");
+		t0.addFontsize( ylabelfontsize);
+		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		t0.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
+		svgf.addText( t0);				
 
 	}
-	// <g>で属性一括指定：終了
-	{
-		svgf.addFileContent( "  </g>");
-	}
-
-
 
 	// Title 
 
 	// グラフタイトル
 	string title = "Frequency - restricted to v less than 2500"s; // "<"とかを自動でエスケープしたい。
 	{
-		stringstream ss;
 		double fontsize = std::floor( cam.actuWidth * 0.7 / title.size() * 2.0); // 描画領域の幅のうち、7割を占めるぐらいのサイズ
 		if ( fontsize >= cam.actuYMin * 0.7){ // 余白の高さの70%より大きいのはダメ
 			fontsize = cam.actuYMin * 0.7;
 		}
-		ss << "  "
-		<< R"(<text)"
-		<< " "
-		<< R"(x=")" << ( std::round( cam.getActualMidX())) << R"(")" // 中央揃えをするので。
-		<< " "
-		<< R"(y=")" << ( std::round( cam.actuYMin * 0.9)) << R"(")" // 余白のうち10%浮かせる。
-		<< " "
-		<< R"(font-family=")" << "Arial,san-serif" << R"(")"
-		<< " "
-		<< R"(font-size=")" << fontsize << R"(")" 
-		<< " "
-		<< R"(text-anchor="middle")"
-		<< " "
-		<< R"(dominant-baseline="text-after-edge")"
-		<< ">"
-		<< title 
-		<< R"(</text>)";
 
-		svgf.addFileContent( ss.str());
+		double actuX = std::round( cam.getActualMidX());
+		double actuY = std::round( cam.actuYMin * 0.9) - fontsize * 0.2;
+
+		SvgText t0( actuX, actuY, title);
+		t0.addFontfamily( "Arial,san-serif");
+		t0.addFontsize( fontsize);
+		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		svgf.addText( t0);	
+
 	}
 
 
 	// x軸タイトルを書く。
-	string xaxislabel = "Household Income";
+	string xaxistitle = "Household Income";
 	{
 
 		double fontsize = 20; // とりあえずの値。
 		double xaxislabelmargin = 30; // とりあえずの値。
-		
-		stringstream ss;
 
-		ss << "  "
-		<< R"(<text)"
-		<< " "
-		<< R"(x=")" << ( std::round( cam.getActualMidX())) << R"(")" // 中央揃えをするので。
-		<< " "
-		<< R"(y=")" << ( std::round( cam.actuYMax + xaxislabelmargin + fontsize)) << R"(")" // 描画領域の下端からmarginだけ離す。
-		<< " "
-		<< R"(font-family=")" << "Arial,san-serif" << R"(")"
-		<< " "
-		<< R"(font-size=")" << fontsize << R"(")" 
-		<< " "
-		<< R"(text-anchor="middle")"
-		<< " "
-		<< R"(dominant-baseline="text-after-edge")" // これでないとIEやWordで崩れる。
-		<< ">"
-		<< xaxislabel 
-		<< R"(</text>)";
+		double actuX = std::round( cam.getActualMidX());
+		double actuY = std::round( cam.actuYMax + xaxislabelmargin + fontsize * 0.8); // 描画領域の下端からmarginだけ離す。
 
-		svgf.addFileContent( ss.str());
+		SvgText t0( actuX, actuY, xaxistitle);
+		t0.addFontfamily( "Arial,san-serif");
+		t0.addFontsize( fontsize);
+		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		svgf.addText( t0);	
 
 	}
 
 
 	// y軸タイトルを書く。
-	string yaxislabel = "#Cases";
+	string yaxistitle = "#Cases";
 	{
 
 		double fontsize = 20; // とりあえずの値。
 		double yaxislabelmargin = 30; // とりあえずの値。
 		
-		stringstream ss;
-		double x = std::round( cam.actuXMin - yaxislabelmargin);
-		double y = std::round( cam.getActualMidY());
+		double actuX = std::round( cam.actuXMin - yaxislabelmargin - fontsize * 0.2);
+		double actuY = std::round( cam.getActualMidY());
 
-		ss << "  "
-		<< R"(<text)"
-		<< " "
-		<< R"(x=")" << x << R"(")" // 描画領域の左端からmarginだけ離す。
-		<< " "
-		<< R"(y=")" << y << R"(")" // 中央揃えをするので。
-		<< " "
-		<< R"(font-family=")" << "Arial,san-serif" << R"(")"
-		<< " "
-		<< R"(font-size=")" << fontsize << R"(")" 
-		<< " "
-		<< R"(text-anchor="middle")"
-		<< " "
-		<< R"(dominant-baseline="text-after-edge")"
-		<< " "
-		<< R"(transform="rotate(270 )" << x << " " << y << ")" << R"(")" 
-		<< ">"
-		<< yaxislabel 
-		<< R"(</text>)";
-
-		svgf.addFileContent( ss.str());
+		SvgText t0( actuX, actuY, yaxistitle);
+		t0.addFontfamily( "Arial,san-serif");
+		t0.addFontsize( fontsize);
+		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		t0.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
+		svgf.addText( t0);	
 
 	}
 
@@ -1086,7 +1041,14 @@ void drawHistogramToSvg(
 
 	// 枠線を描く。最後にすべき。
 	// fillは透過させる。
-	svgf.addFileContent( R"(  <rect x="50" y="50" width="400" height="400" fill-opacity="0" stroke="Black" stroke-width="1" />)");
+	{
+		SvgRect r( 50, 50, 400, 400);
+		r.addFillopacity( 0);
+		r.addStroke( "black");
+		r.addStrokewidth( 1);
+		svgf.addRect( r);
+	}
+//	svgf.addFileContent( R"(  <rect x="50" y="50" width="400" height="400" fill-opacity="0" stroke="Black" stroke-width="1" />)");
 
 
 	svgf.addFileContent( R"(</svg>)");
@@ -1109,6 +1071,8 @@ void drawHistogramToSvg(
 // k0個以上で最小の点を返す。
 // newminがtrueのとき、得られた間隔に乗る新しいminも返す。
 // newmaxがtrueのとき、得られた間隔に乗る新しいmaxも返す。
+// 以下のサイトのアルゴリズムに近そう。
+// https://imagingsolution.net/program/autocalcgraphstep/
 std::vector <double>
 getGridPoints( double min0, double max0, int k0 /*= 4*/, bool newmin /*= true*/, bool newmax /*= true*/)
 {
@@ -1206,5 +1170,10 @@ void SvgFile :: addRect( const SvgRect &r0)
 void SvgFile :: addLine( const SvgLine &l0)
 {
 	filecontent.push_back( l0.getContent());
+}
+
+void SvgFile :: addText( const SvgText &t0)
+{
+	filecontent.push_back( t0.getContent());
 }
 
