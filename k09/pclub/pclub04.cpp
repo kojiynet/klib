@@ -16,6 +16,9 @@
 	　　階級の端点の表を与える方式。
 	ヒストグラムを描く。
 	SVGにする。
+
+	-std:c++17でコンパイルが通るかやってみる。
+	gccでも。
 	
 */
 
@@ -72,9 +75,16 @@ private:
 
 	std::vector <std::string> filecontent;
 
+	// This line should be exactly in the first line in SVG file.
+	const std::string headstr   
+	 = { R"(<?xml version="1.0" encoding="UTF-8" ?>)"};
+
+
 public:
 
-	SvgFile( void) : filecontent(){}
+	SvgFile( void)
+	 : filecontent()
+	{}
 
 	~SvgFile( void){}
 
@@ -94,7 +104,9 @@ public:
 */
 	std::vector <std::string> getFileContent( void)
 	{
-		return filecontent;
+		std::vector <std::string> ret = filecontent;
+		ret.insert( ret.begin(), headstr);
+		return ret;
 	}
 
 	// ファイルに書くメソッドも。。
@@ -623,7 +635,6 @@ void drawHistogramToSvg(
 	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
 
 	// ↓こういうのを書き直す。
-	svgf.addFileContent( R"(<?xml version="1.0" encoding="UTF-8" ?>)"); // This should be exactly in the first line.
 	svgf.addFileContent( R"(<svg width="500px" height="500px" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">)");
 
 	{
