@@ -73,17 +73,28 @@ class SvgFile {
 
 private:
 
+	double width;
+	double height;
+	double viewBoxX1; 
+	double viewBoxY1; 
+	double viewBoxX2; 
+	double viewBoxY2; 
+
 	std::vector <std::string> filecontent;
 
 	// This line should be exactly in the first line in SVG file.
-	const std::string headstr   
+	const std::string headline1   
 	 = { R"(<?xml version="1.0" encoding="UTF-8" ?>)"};
 
 
 public:
 
-	SvgFile( void)
-	 : filecontent()
+	SvgFile() = delete;
+
+	SvgFile( double w0, double h0, double x1, double y1, double x2, double y2)
+	 : width( w0), height( h0),
+	   viewBoxX1( x1), viewBoxY1( y1), viewBoxX2( x2), viewBoxY2( y2),
+	   filecontent()
 	{}
 
 	~SvgFile( void){}
@@ -104,8 +115,16 @@ public:
 */
 	std::vector <std::string> getFileContent( void)
 	{
-		std::vector <std::string> ret = filecontent;
-		ret.insert( ret.begin(), headstr);
+		std::vector <std::string> ret;
+		ret.reserve( filecontent.size() + 2);
+		ret.push_back( headline1);
+		stringstream ss;
+		ss << R"(<svg width=")" << width << R"(px")" << " " 
+		   << R"(height=")" << height << R"(px")" << " " 
+		   << R"(viewBox=")" << viewBoxX1 << " " << viewBoxY1 << " " << viewBoxX2 << " " << viewBoxY2 << R"(")" << " " 
+		   << R"(xmlns="http://www.w3.org/2000/svg">)";
+		ret.push_back( ss.str());
+		ret.insert( ret.end(), filecontent.begin(), filecontent.end());
 		return ret;
 	}
 
@@ -308,7 +327,6 @@ public:
 
 /*
 以下未実装
-class SvgText {} ;
 class SvgGroup {} ;
 */
 
@@ -592,7 +610,6 @@ void drawHistogramToSvg(
 	};
 
 	
-	SvgFile svgf;
 	Cambus cam;
 
 
@@ -626,7 +643,7 @@ void drawHistogramToSvg(
 	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
 	
 
-
+	// 大きさや位置を変数で指定するようにする。
 
 
 	// SVGファイル化の開始
@@ -634,8 +651,7 @@ void drawHistogramToSvg(
 	cam.setActual( 50, 50, 450, 450);
 	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
 
-	// ↓こういうのを書き直す。
-	svgf.addFileContent( R"(<svg width="500px" height="500px" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">)");
+	SvgFile svgf( 500, 500, 0, 0, 500, 500);
 
 	{
 		SvgRect r1( 0, 0, 500, 500);
