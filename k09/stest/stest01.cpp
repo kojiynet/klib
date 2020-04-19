@@ -1,9 +1,9 @@
 
 /*
 	
-	pclub04.cpp
+	stest01.cpp
 	
-	pclub01.cppから派生。
+	pclub01～04から派生。
 	
 	Written by Koji Yamamoto
 	Copyright (C) 2019-2020 Koji Yamamoto
@@ -423,8 +423,8 @@ int main( int, char *[])
 	ft.getVectors( codes, counts);
 	ft.getRangeVectors( leftvec, rightvec);
 
-	drawHistogramToSvg( "pclub04out01.svg", leftvec, rightvec, counts);
-	drawHistogramToSvg( "pclub04out02.svg", leftvec, rightvec, counts, true); // アニメバージョン
+	drawHistogramToSvg( "stest01out01.svg", leftvec, rightvec, counts);
+	drawHistogramToSvg( "stest01out02.svg", leftvec, rightvec, counts, true); // アニメバージョン
 
 	return 0;
 
@@ -614,6 +614,25 @@ void drawHistogramToSvg(
 
 
 	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
+	double svgwidth = 500;
+	double svgheight = 500;
+	double outermargin = 20;
+	double graph_title_fontsize = 20;
+	double axis_title_fontsize = 20;
+	double axis_label_fontsize = 14;
+	double axis_ticklength = 5;
+
+	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = outermargin + graph_title_fontsize;
+	double graphpane_actuX2 = svgwidth - outermargin; 
+	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_label_fontsize + axis_ticklength);
+
+	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
+	double graphheight = graphpane_actuY2 - graphpane_actuY1;
+
+	// 隙間がなさすぎるので指定していきたい。
+	
+
 
 	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
 
@@ -648,13 +667,14 @@ void drawHistogramToSvg(
 
 	// SVGファイル化の開始
 
-	cam.setActual( 50, 50, 450, 450);
+	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
 	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
 
-	SvgFile svgf( 500, 500, 0, 0, 500, 500);
+	// このグラフではSVGファイル内で座標変換をするわけではない。
+	SvgFile svgf( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
 
 	{
-		SvgRect r1( 0, 0, 500, 500);
+		SvgRect r1( 0, 0, svgwidth, svgheight);
 		r1.addFill( "whitesmoke");
 		r1.addStroke( "whitesmoke");
 		svgf.addRect( r1);
@@ -664,7 +684,7 @@ void drawHistogramToSvg(
 
 	// 背景色だけ塗る。
 	{
-		SvgRect r2( 50, 50, 400, 400);
+		SvgRect r2( graphpane_actuX1, graphpane_actuY1, graphwidth, graphheight);
 		r2.addFill( "gainsboro");
 		r2.addStroke( "gainsboro");
 		svgf.addRect( r2);
@@ -910,12 +930,10 @@ void drawHistogramToSvg(
 
 		double actuX = cam.getXActualFromTheoretical( v);
 
-		double tickheight = 5; // とりあえずの値。
-
 		double x1 = actuX;
 		double y1 = cam.actuYMax;
 		double x2 = actuX;
-		double y2 = cam.actuYMax + tickheight;
+		double y2 = cam.actuYMax + axis_ticklength; 
 
 		SvgLine li( x1, y1, x2, y2);
 		li.addStroke( "black"); // 一括指定対象
@@ -931,22 +949,19 @@ void drawHistogramToSvg(
 	// （指定してもdominant-baseline="alphabetic"扱いになる。）
 
 	// x軸の目盛のラベル
-	double xlabelfontsize = 14; // とりあえずの値。
 	for ( auto v : xgridpoints){
-
-		double ticklabelmargin = 10; // とりあえずの値。
 
 		double actuX = cam.getXActualFromTheoretical( v);
 
 		// 描画領域の下端からmarginだけ離す。
 		// alphabeticの基線は、このフォントの場合、本当のフォント下端より20%上なので、その分をずらしている。
-		double actuY = std::round( cam.actuYMax + ticklabelmargin + xlabelfontsize * 0.8);
+		double actuY = svgheight - outermargin - axis_title_fontsize - axis_label_fontsize * 0.2;
 
 		// vの桁数はどうなるのか。。 
 
 		SvgText t0( actuX, actuY, v); // vはstringに変換される。
 		t0.addFontfamily( "Arial,san-serif");
-		t0.addFontsize( xlabelfontsize);
+		t0.addFontsize( axis_label_fontsize);
 		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
 		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
 		svgf.addText( t0);		
@@ -959,11 +974,9 @@ void drawHistogramToSvg(
 
 		double actuY = cam.getYActualFromTheoretical( v);
 
-		double ticklength = 5; // とりあえずの値。
-
 		double x1 = cam.actuXMin;
 		double y1 = actuY;
-		double x2 = cam.actuXMin - ticklength;
+		double x2 = cam.actuXMin - axis_ticklength; 
 		double y2 = actuY; 
 
 		SvgLine li( x1, y1, x2, y2);
@@ -979,19 +992,16 @@ void drawHistogramToSvg(
 	　svgtest04.svgで2つの方法を試したが、もっとシンプルにしたかった。
 	　svgtest05.svgで、transform属性を使えばよいことがわかった。
 	*/
-	double ylabelfontsize = 14; // とりあえずの値。
 	for ( auto v : ygridpoints){
-
-		double ticklabelmargin = 10; // とりあえずの値。
 
 		double actuY = cam.getYActualFromTheoretical( v);
 
 		// alphabetic基線に合わせるために20%ずらしている。
-		double actuX = std::round( cam.actuXMin - ticklabelmargin - ylabelfontsize * 0.2);
-
+		double actuX = outermargin + axis_title_fontsize + axis_label_fontsize * 0.8;
+		
 		SvgText t0( actuX, actuY, v); // vはstringに変換される。
 		t0.addFontfamily( "Arial,san-serif");
-		t0.addFontsize( ylabelfontsize);
+		t0.addFontsize( axis_label_fontsize);
 		t0.addTextanchor( "middle"); // 左右方向に中央揃えをする。
 		t0.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
 		t0.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
@@ -1004,13 +1014,15 @@ void drawHistogramToSvg(
 	// グラフタイトル
 	string title = "Frequency - restricted to v less than 2500"s; // "<"とかを自動でエスケープしたい。
 	{
-		double fontsize = std::floor( cam.actuWidth * 0.7 / title.size() * 2.0); // 描画領域の幅のうち、7割を占めるぐらいのサイズ
-		if ( fontsize >= cam.actuYMin * 0.7){ // 余白の高さの70%より大きいのはダメ
-			fontsize = cam.actuYMin * 0.7;
-		}
+//		double fontsize = std::floor( cam.actuWidth * 0.7 / title.size() * 2.0); // 描画領域の幅のうち、7割を占めるぐらいのサイズ
+//		if ( fontsize >= cam.actuYMin * 0.7){ // 余白の高さの70%より大きいのはダメ
+//			fontsize = cam.actuYMin * 0.7;
+//		}
+		double fontsize = graph_title_fontsize; // 20;
+		double margin = 10;
 
-		double actuX = std::round( cam.getActualMidX());
-		double actuY = std::round( cam.actuYMin * 0.9) - fontsize * 0.2;
+		double actuX = std::round( svgwidth / 2);
+		double actuY = outermargin + fontsize * 0.8;
 
 		SvgText t0( actuX, actuY, title);
 		t0.addFontfamily( "Arial,san-serif");
@@ -1026,11 +1038,10 @@ void drawHistogramToSvg(
 	string xaxistitle = "Household Income";
 	{
 
-		double fontsize = 20; // とりあえずの値。
-		double xaxislabelmargin = 30; // とりあえずの値。
+		double fontsize = axis_title_fontsize; // 20; // とりあえずの値。
 
 		double actuX = std::round( cam.getActualMidX());
-		double actuY = std::round( cam.actuYMax + xaxislabelmargin + fontsize * 0.8); // 描画領域の下端からmarginだけ離す。
+		double actuY = svgheight - outermargin - ( fontsize * 0.2); 
 
 		SvgText t0( actuX, actuY, xaxistitle);
 		t0.addFontfamily( "Arial,san-serif");
@@ -1046,10 +1057,9 @@ void drawHistogramToSvg(
 	string yaxistitle = "#Cases";
 	{
 
-		double fontsize = 20; // とりあえずの値。
-		double yaxislabelmargin = 30; // とりあえずの値。
+		double fontsize = axis_title_fontsize; 
 		
-		double actuX = std::round( cam.actuXMin - yaxislabelmargin - fontsize * 0.2);
+		double actuX = outermargin + ( fontsize * 0.8);
 		double actuY = std::round( cam.getActualMidY());
 
 		SvgText t0( actuX, actuY, yaxistitle);
@@ -1069,7 +1079,7 @@ void drawHistogramToSvg(
 	// 枠線を描く。最後にすべき。
 	// fillは透過させる。
 	{
-		SvgRect r( 50, 50, 400, 400);
+		SvgRect r( graphpane_actuX1, graphpane_actuY1, graphwidth, graphheight);
 		r.addFillopacity( 0);
 		r.addStroke( "black");
 		r.addStrokewidth( 1);
