@@ -618,14 +618,17 @@ void drawHistogramToSvg(
 	double svgheight = 500;
 	double outermargin = 20;
 	double graph_title_fontsize = 20;
+	double graph_title_margin = 10; // グラフタイトルの下のマージン
 	double axis_title_fontsize = 20;
+	double axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
 	double axis_label_fontsize = 14;
 	double axis_ticklength = 5;
 
-	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_label_fontsize + axis_ticklength; 
-	double graphpane_actuY1 = outermargin + graph_title_fontsize;
+	// グラフ描画領域の座標（左上、右下）
+	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
 	double graphpane_actuX2 = svgwidth - outermargin; 
-	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_label_fontsize + axis_ticklength);
+	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
 
 	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
 	double graphheight = graphpane_actuY2 - graphpane_actuY1;
@@ -955,7 +958,8 @@ void drawHistogramToSvg(
 
 		// 描画領域の下端からmarginだけ離す。
 		// alphabeticの基線は、このフォントの場合、本当のフォント下端より20%上なので、その分をずらしている。
-		double actuY = svgheight - outermargin - axis_title_fontsize - axis_label_fontsize * 0.2;
+//		double actuY = svgheight - outermargin - axis_title_fontsize - axis_label_fontsize * 0.2;
+		double actuY = cam.actuYMax + axis_ticklength + axis_label_fontsize * 0.8;
 
 		// vの桁数はどうなるのか。。 
 
@@ -997,7 +1001,8 @@ void drawHistogramToSvg(
 		double actuY = cam.getYActualFromTheoretical( v);
 
 		// alphabetic基線に合わせるために20%ずらしている。
-		double actuX = outermargin + axis_title_fontsize + axis_label_fontsize * 0.8;
+//		double actuX = outermargin + axis_title_fontsize + axis_label_fontsize * 0.8;
+		double actuX = cam.actuXMin - axis_ticklength - axis_label_fontsize * 0.2;
 		
 		SvgText t0( actuX, actuY, v); // vはstringに変換される。
 		t0.addFontfamily( "Arial,san-serif");
@@ -1041,7 +1046,7 @@ void drawHistogramToSvg(
 		double fontsize = axis_title_fontsize; // 20; // とりあえずの値。
 
 		double actuX = std::round( cam.getActualMidX());
-		double actuY = svgheight - outermargin - ( fontsize * 0.2); 
+		double actuY = svgheight - outermargin - fontsize * 0.2; 
 
 		SvgText t0( actuX, actuY, xaxistitle);
 		t0.addFontfamily( "Arial,san-serif");
@@ -1059,7 +1064,7 @@ void drawHistogramToSvg(
 
 		double fontsize = axis_title_fontsize; 
 		
-		double actuX = outermargin + ( fontsize * 0.8);
+		double actuX = outermargin + fontsize * 0.8;
 		double actuY = std::round( cam.getActualMidY());
 
 		SvgText t0( actuX, actuY, yaxistitle);
