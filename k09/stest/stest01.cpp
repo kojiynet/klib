@@ -128,7 +128,37 @@ public:
 		return ret;
 	}
 
-	// ファイルに書くメソッドも。。
+	// ファイルに書き出すメソッド
+	// 書き込み用ファイルを開く。
+
+	// 正常終了でtrue、異常終了でfalseを返す。
+
+	// appendのデフォルト値はtrue、overwriteのデフォルト値はfalse、askのデフォルト値はtrue。
+	// 同じファイル名のファイルがすでに存在する場合の挙動は以下のとおり。
+	// appendがtrueなら、追加書き込みモードで開く。overwriteとaskは無視する。
+	// appendがfalseで、overwriteがtrueなら、上書きする。
+	// appendがfalseで、overwriteがfalseで、askがtrueなら、上書きするかどうかをコンソールで尋ねる。
+	// appendがfalseで、overwriteがfalseで、askがfalseなら、ファイルを開かない。
+	bool writeFile( const string &fn0, bool append = false, bool overwrite = false, bool ask = true)
+	{
+
+		std::vector <std::string> svglines = getFileContent();
+		koutputfile outsvg( fn0);
+
+		bool ret = outsvg.open( append, overwrite, ask);
+		if ( ret == false){
+			return false;
+		}
+
+		ret = outsvg.writeLines( svglines);
+		if ( ret == false){
+			return false;
+		}
+
+		outsvg.close();
+		return true;
+
+	}
 
 };
 
@@ -633,7 +663,6 @@ void drawHistogramToSvg(
 	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
 	double graphheight = graphpane_actuY2 - graphpane_actuY1;
 
-	// 隙間がなさすぎるので指定していきたい。
 	
 
 
@@ -693,8 +722,9 @@ void drawHistogramToSvg(
 		svgf.addRect( r2);
 	}
 
+	// 以下、<g>での一括指定ができるところが多いが、とりあえず無視する。
+
 	// x軸の目盛を示すグリッド線
-	// <g>での一括指定はまだ。
 	for ( auto v : xgridpoints){
 
 		Point theoP1( v, theoYMax); // top
@@ -709,52 +739,8 @@ void drawHistogramToSvg(
 
 	}
 
-	/*
-	// <g>で属性一括指定：開始
-	{
-		stringstream ss;
-		ss << "  "
-		   << R"(<g)"
-		   << " "
-		   << R"(stroke=")" << "silver" << R"(")"
-		   << " "
-		   << R"(stroke-width=")" << 1 << R"(")"
-		   << R"(>)";
-		svgf.addFileContent( ss.str());
-	}
-	for ( auto v : xgridpoints){
-
-		Point theoP1( v, theoYMax); // top
-		Point theoP2( v, theoYMin); // bottom 
-		Point actuP1 = cam.getActualFromTheoretical( theoP1);
-		Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-		stringstream ss;
-		ss << "    "
-		<< R"(<line)"
-		<< " "
-		<< R"(x1=")" << actuP1.x << R"(")"
-		<< " "
-		<< R"(y1=")" << actuP1.y << R"(")"
-		<< " "
-		<< R"(x2=")" << actuP2.x << R"(")"
-		<< " "
-		<< R"(y2=")" << actuP2.y << R"(")"
-		<< " "
-		<< R"(/>)";
-
-		svgf.addFileContent( ss.str());
-
-	}
-	// <g>で属性一括指定：終了
-	{
-		svgf.addFileContent( "  </g>");
-	}
-	*/
-
 
 	// y軸の目盛を示すグリッド線
-	// <g>での一括指定はまだ。
 	for ( auto v : ygridpoints){
 
 		Point theoP1( theoXMin, v); // left
@@ -769,49 +755,6 @@ void drawHistogramToSvg(
 
 	}
 
-
-	/*
-	// <g>で属性一括指定：開始
-	{
-		stringstream ss;
-		ss << "  "
-		   << R"(<g)"
-		   << " "
-		   << R"(stroke=")" << "silver" << R"(")"
-		   << " "
-		   << R"(stroke-width=")" << 1 << R"(")"
-		   << R"(>)";
-		svgf.addFileContent( ss.str());
-	}
-	for ( auto v : ygridpoints){
-
-		Point theoP1( theoXMin, v); // left
-		Point theoP2( theoXMax, v); // right 
-		Point actuP1 = cam.getActualFromTheoretical( theoP1);
-		Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-		stringstream ss;
-		ss << "    "
-		<< R"(<line)"
-		<< " "
-		<< R"(x1=")" << actuP1.x << R"(")"
-		<< " "
-		<< R"(y1=")" << actuP1.y << R"(")"
-		<< " "
-		<< R"(x2=")" << actuP2.x << R"(")"
-		<< " "
-		<< R"(y2=")" << actuP2.y << R"(")"
-		<< " "
-		<< R"(/>)";
-
-		svgf.addFileContent( ss.str());
-
-	}
-	// <g>で属性一括指定：終了
-	{
-		svgf.addFileContent( "  </g>");
-	}
-	*/
 
 	// 背景の描画終了
 
@@ -881,34 +824,12 @@ void drawHistogramToSvg(
 
 	} else {
 
-		// <g>での一括指定はまだ。
 		for ( int i = 0; i < counts.size(); i++){
 
 			Point theoP1( leftvec[ i], counts[ i]); // left-top
 			Point theoP2( rightvec[ i], 0); // right-bottom 
 			Point actuP1 = cam.getActualFromTheoretical( theoP1);
 			Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-			/*
-			stringstream ss;
-			ss << "    "
-			<< R"(<rect)"
-			<< " "
-			<< R"(x=")" << actuP1.x << R"(")"
-			<< " "
-			<< R"(y=")" << actuP1.y << R"(")"
-			<< " "
-			<< R"(width=")" << ( actuP2.x - actuP1.x) << R"(")"
-			<< " "
-			<< R"(height=")" << ( actuP2.y - actuP1.y) << R"(")"
-			<< " "
-			<< R"(stroke=")" << "Gray" << R"(")"
-			<< " "
-			<< R"(fill=")" << "Gray" << R"(")"
-			<< " "
-			<< R"(/>)";
-			svgf.addFileContent( ss.str());	
-			*/
 
 			SvgRect rect( actuP1.x, actuP1.y,actuP2.x - actuP1.x, actuP2.y - actuP1.y); 
 			rect.addFill( "Gray");
@@ -925,10 +846,8 @@ void drawHistogramToSvg(
 
 	// 周辺情報記載の開始
 
-	// TODO: フォントサイズを自動調整→優先順位が低い。フォントサイズ固定でもいい。
 
 	// x軸の目盛のヒゲ
-	// <g>での一括指定はまだ。
 	for ( auto v : xgridpoints){
 
 		double actuX = cam.getXActualFromTheoretical( v);
@@ -958,7 +877,6 @@ void drawHistogramToSvg(
 
 		// 描画領域の下端からmarginだけ離す。
 		// alphabeticの基線は、このフォントの場合、本当のフォント下端より20%上なので、その分をずらしている。
-//		double actuY = svgheight - outermargin - axis_title_fontsize - axis_label_fontsize * 0.2;
 		double actuY = cam.actuYMax + axis_ticklength + axis_label_fontsize * 0.8;
 
 		// vの桁数はどうなるのか。。 
@@ -973,7 +891,6 @@ void drawHistogramToSvg(
 	}
 
 	// y軸の目盛のヒゲ
-	// <g>での一括指定はまだ。
 	for ( auto v : ygridpoints){
 
 		double actuY = cam.getYActualFromTheoretical( v);
@@ -1001,7 +918,6 @@ void drawHistogramToSvg(
 		double actuY = cam.getYActualFromTheoretical( v);
 
 		// alphabetic基線に合わせるために20%ずらしている。
-//		double actuX = outermargin + axis_title_fontsize + axis_label_fontsize * 0.8;
 		double actuX = cam.actuXMin - axis_ticklength - axis_label_fontsize * 0.2;
 		
 		SvgText t0( actuX, actuY, v); // vはstringに変換される。
@@ -1016,6 +932,8 @@ void drawHistogramToSvg(
 
 	// Title 
 
+	// TODO: フォントサイズを自動調節する？
+
 	// グラフタイトル
 	string title = "Frequency - restricted to v less than 2500"s; // "<"とかを自動でエスケープしたい。
 	{
@@ -1023,7 +941,7 @@ void drawHistogramToSvg(
 //		if ( fontsize >= cam.actuYMin * 0.7){ // 余白の高さの70%より大きいのはダメ
 //			fontsize = cam.actuYMin * 0.7;
 //		}
-		double fontsize = graph_title_fontsize; // 20;
+		double fontsize = graph_title_fontsize; 
 		double margin = 10;
 
 		double actuX = std::round( svgwidth / 2);
@@ -1043,7 +961,7 @@ void drawHistogramToSvg(
 	string xaxistitle = "Household Income";
 	{
 
-		double fontsize = axis_title_fontsize; // 20; // とりあえずの値。
+		double fontsize = axis_title_fontsize; 
 
 		double actuX = std::round( cam.getActualMidX());
 		double actuY = svgheight - outermargin - fontsize * 0.2; 
@@ -1090,7 +1008,6 @@ void drawHistogramToSvg(
 		r.addStrokewidth( 1);
 		svgf.addRect( r);
 	}
-//	svgf.addFileContent( R"(  <rect x="50" y="50" width="400" height="400" fill-opacity="0" stroke="Black" stroke-width="1" />)");
 
 
 	svgf.addFileContent( R"(</svg>)");
@@ -1100,12 +1017,15 @@ void drawHistogramToSvg(
 	                  " -->";
 	svgf.addFileContent( detector);
 
+	/*
 	vector <string> svglines = svgf.getFileContent();
 
 	koutputfile outsvg( fn);
 	outsvg.open( false, false, true);
 	outsvg.writeLines( svglines);
 	outsvg.close();
+	*/
+	svgf.writeFile( fn);
 
 }
 
