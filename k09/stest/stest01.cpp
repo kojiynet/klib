@@ -116,16 +116,33 @@ public:
 	std::vector <std::string> getFileContent( void)
 	{
 		std::vector <std::string> ret;
-		ret.reserve( filecontent.size() + 2);
+		ret.reserve( filecontent.size() + 4);
+
+		// 1行目
 		ret.push_back( headline1);
-		stringstream ss;
-		ss << R"(<svg width=")" << width << R"(px")" << " " 
-		   << R"(height=")" << height << R"(px")" << " " 
-		   << R"(viewBox=")" << viewBoxX1 << " " << viewBoxY1 << " " << viewBoxX2 << " " << viewBoxY2 << R"(")" << " " 
-		   << R"(xmlns="http://www.w3.org/2000/svg">)";
-		ret.push_back( ss.str());
+
+		// 2行目
+		{
+			stringstream ss;
+			ss << R"(<svg width=")" << width << R"(px")" << " " 
+			<< R"(height=")" << height << R"(px")" << " " 
+			<< R"(viewBox=")" << viewBoxX1 << " " << viewBoxY1 << " " << viewBoxX2 << " " << viewBoxY2 << R"(")" << " " 
+			<< R"(xmlns="http://www.w3.org/2000/svg">)";
+			ret.push_back( ss.str());
+		}
+
+		// 3行目以降＝SVGの中身
 		ret.insert( ret.end(), filecontent.begin(), filecontent.end());
+
+		// 最後の2行
+		ret.push_back( "</svg>");
+		string detector = "<!-- " 
+		                  u8"\u6587\u5B57\u30B3\u30FC\u30C9\u8B58\u5225\u7528" // 「文字コード識別用」というUTF-8文字列
+		                  " -->";
+		ret.push_back( detector);
+		
 		return ret;
+
 	}
 
 	// ファイルに書き出すメソッド
@@ -1009,22 +1026,6 @@ void drawHistogramToSvg(
 		svgf.addRect( r);
 	}
 
-
-	svgf.addFileContent( R"(</svg>)");
-
-	string detector = "<!-- " 
-	                  u8"\u6587\u5B57\u30B3\u30FC\u30C9\u8B58\u5225\u7528" // 「文字コード識別用」というUTF-8文字列
-	                  " -->";
-	svgf.addFileContent( detector);
-
-	/*
-	vector <string> svglines = svgf.getFileContent();
-
-	koutputfile outsvg( fn);
-	outsvg.open( false, false, true);
-	outsvg.writeLines( svglines);
-	outsvg.close();
-	*/
 	svgf.writeFile( fn);
 
 }
