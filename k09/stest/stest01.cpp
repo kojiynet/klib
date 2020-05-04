@@ -46,7 +46,9 @@ class SvgFile;
 class SvgRect;
 class SvgLine;
 class SvgText;
-class SvgGroup;
+//class SvgGroup;
+
+class SvgGraph;
 
 
 /* ********** Enum Definitions ********** */
@@ -58,6 +60,12 @@ int main( int, char *[]);
 
 void drawHistogramToSvg(
 	const std::string &,
+	const std::vector <double> &, const std::vector <double> &,
+	const std::vector <int> &,
+	bool = false
+);
+
+SvgGraph createHistogram(
 	const std::vector <double> &, const std::vector <double> &,
 	const std::vector <int> &,
 	bool = false
@@ -85,7 +93,6 @@ private:
 	// This line should be exactly in the first line in SVG file.
 	const std::string headline1   
 	 = { R"(<?xml version="1.0" encoding="UTF-8" ?>)"};
-
 
 public:
 
@@ -371,11 +378,29 @@ public:
 
 };
 
-
 /*
 以下未実装
 class SvgGroup {} ;
 */
+
+class SvgGraph { 
+
+
+private:
+
+	SvgFile svgf;
+
+public:
+
+	SvgGraph(
+		double w0, double h0, double x1, double y1, double x2, double y2
+	)
+	 : svgf( w0, h0, x1, y1, x2, y2)
+	{}
+
+	bool writeFile( const string &fn0, bool append = false, bool overwrite = false, bool ask = true);
+
+}; 
 
 
 /* ********** Global Variables ********** */
@@ -461,7 +486,7 @@ int main( int, char *[])
 	ft.printPadding( cout);
 
 
-	// ヒストグラムをつくりたい。
+	// ヒストグラムをつくる。
 
 	vector <int> codes;
 	vector <int> counts;
@@ -472,6 +497,13 @@ int main( int, char *[])
 
 	drawHistogramToSvg( "stest01out01.svg", leftvec, rightvec, counts);
 	drawHistogramToSvg( "stest01out02.svg", leftvec, rightvec, counts, true); // アニメバージョン
+
+
+	// ↓ヒストグラムをこの中でつくりつつ、、SvgGraphクラスをつくる。
+	SvgGraph svgg = createHistogram( leftvec, rightvec, counts);
+	svgg.writeFile( "stest01out03.svg");
+
+
 
 	return 0;
 
@@ -1029,6 +1061,34 @@ void drawHistogramToSvg(
 	svgf.writeFile( fn);
 
 }
+
+SvgGraph createHistogramToSvg(
+	const std::vector <double> &leftvec,
+	const std::vector <double> &rightvec,
+	const std::vector <int> &counts,
+	bool animated /*= false*/
+)
+{
+
+	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
+	double svgwidth = 500;
+	double svgheight = 500;
+	double outermargin = 20;
+	double graph_title_fontsize = 20;
+	double graph_title_margin = 10; // グラフタイトルの下のマージン
+	double axis_title_fontsize = 20;
+	double axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
+	double axis_label_fontsize = 14;
+	double axis_ticklength = 5;
+
+	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
+
+	// ここを書いていく。
+
+	return svgg;
+
+}
+
 
 // [min0, max0]に、いい感じの間隔で点をとる。
 // k0個以上で最小の点を返す。
