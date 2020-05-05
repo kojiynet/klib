@@ -42,6 +42,9 @@ using namespace std;
 
 /* ********** Class Declarations ********** */
 
+struct Cambus;
+struct Point;
+
 class SvgFile;
 class SvgRect;
 class SvgLine;
@@ -76,6 +79,92 @@ getGridPoints( double, double, int = 4, bool = true, bool = true);
 
 
 /* ********** Class Definitions ********** */
+
+struct Point {
+
+	double x, y;
+
+	Point( void)
+		: x( std::numeric_limits<double>::quiet_NaN()),
+		y( std::numeric_limits<double>::quiet_NaN())
+	{}
+	
+	Point( double x0, double y0) : x( x0), y( y0)
+	{}
+
+};
+
+struct Cambus {
+
+	// 実際の座標系では、y座標は大きいほど「下」の位置を示す。
+	// 論理座標系では、y座標は大きいほど「上」の位置を示す。
+
+	double actuXMin, actuYMin, actuXMax, actuYMax; // 実際の座標系での、枠の範囲
+	double actuWidth, actuHeight; // 同上
+
+	double theoXMin, theoYMin, theoXMax, theoYMax; // 論理座標系での、枠の範囲
+	double theoWidth, theoHeight; // 同上
+
+	void setTheoretical( double xmin0, double ymin0, double xmax0, double ymax0)
+	{
+		theoXMin = xmin0; theoYMin = ymin0; theoXMax = xmax0; theoYMax = ymax0; 
+		theoWidth = xmax0 - xmin0; theoHeight = ymax0 - ymin0; 
+	}
+
+	void setActual( double xmin0, double ymin0, double xmax0, double ymax0)
+	{
+		actuXMin = xmin0; actuYMin = ymin0; actuXMax = xmax0; actuYMax = ymax0; 
+		actuWidth = xmax0 - xmin0; actuHeight = ymax0 - ymin0; 
+	}
+
+	// 論理座標系表現から実際の座標系表現を作成。
+	Point getActualFromTheoretical( const Point &poi0)
+	{
+		
+		double x0 = poi0.x;
+		double y0 = poi0.y;
+		Point ret;
+		ret.x = ( x0 - theoXMin) / theoWidth  * actuWidth  + actuXMin; 
+		ret.y = ( theoYMax - y0) / theoHeight * actuHeight + actuYMin; 
+		return ret;
+
+	}
+
+	// x座標のみを算出→論理座標系表現から実際の座標系表現を作成。
+	double getXActualFromTheoretical( double x0)
+	{
+
+		double retx = ( x0 - theoXMin) / theoWidth  * actuWidth  + actuXMin; 
+		return retx;
+
+	}
+
+	// y座標のみを算出→論理座標系表現から実際の座標系表現を作成。
+	double getYActualFromTheoretical( double y0)
+	{
+		
+		double rety = ( theoYMax - y0) / theoHeight * actuHeight + actuYMin; 
+		return rety;
+
+	}
+
+	// 実際の座標系での中点のxを返す。
+	double getActualMidX( void)
+	{
+
+		return ( actuXMin + actuWidth / 2);
+
+	}
+
+	// 実際の座標系での中点のyを返す。
+	double getActualMidY( void)
+	{
+
+		return ( actuYMin + actuHeight / 2);
+
+	}
+
+};
 
 class SvgFile {
 
@@ -383,12 +472,16 @@ public:
 class SvgGroup {} ;
 */
 
-class SvgGraph { 
 
+
+class SvgGraph { 
 
 private:
 
 	SvgFile svgf;
+	Cambus cam;
+	double svgwidth;  // width of the whole SVG
+	double svgheight; // height of the whole SVG
 
 public:
 
@@ -398,9 +491,28 @@ public:
 	 : svgf( w0, h0, x1, y1, x2, y2)
 	{}
 
+	void setCambus( const Cambus &c0)
+	{
+		cam = c0;
+	}
+
+	void setBackground( const string &b0)
+	{
+		SvgRect r1( 0, 0, svgwidth, svgheight);
+		r1.addFill( b0);
+		r1.addStroke( b0);
+		addRectActu( r1);
+	}
+
+	// 座標変換せずに描画
+	// defined later
+	void addRectActu( const SvgRect &); 
+
 	bool writeFile( const string &fn0, bool append = false, bool overwrite = false, bool ask = true);
 
 }; 
+
+	
 
 
 /* ********** Global Variables ********** */
@@ -599,96 +711,6 @@ void drawHistogramToSvg(
 	// （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
 	// svgタグのサイズとviewBoxのサイズを合わせたい。
 
-	struct Cambus;
-	struct Point;
-	
-	struct Point {
-
-		double x, y;
-
-		Point( void)
-		 : x( std::numeric_limits<double>::quiet_NaN()),
-		   y( std::numeric_limits<double>::quiet_NaN())
-		{}
-		
-		Point( double x0, double y0) : x( x0), y( y0)
-		{}
-
-	};
-
-	struct Cambus {
-
-		// 実際の座標系では、y座標は大きいほど「下」の位置を示す。
-		// 論理座標系では、y座標は大きいほど「上」の位置を示す。
-
-		double actuXMin, actuYMin, actuXMax, actuYMax; // 実際の座標系での、枠の範囲
-		double actuWidth, actuHeight; // 同上
-
-		double theoXMin, theoYMin, theoXMax, theoYMax; // 論理座標系での、枠の範囲
-		double theoWidth, theoHeight; // 同上
-
-		void setTheoretical( double xmin0, double ymin0, double xmax0, double ymax0)
-		{
-			theoXMin = xmin0; theoYMin = ymin0; theoXMax = xmax0; theoYMax = ymax0; 
-			theoWidth = xmax0 - xmin0; theoHeight = ymax0 - ymin0; 
-		}
-
-		void setActual( double xmin0, double ymin0, double xmax0, double ymax0)
-		{
-			actuXMin = xmin0; actuYMin = ymin0; actuXMax = xmax0; actuYMax = ymax0; 
-			actuWidth = xmax0 - xmin0; actuHeight = ymax0 - ymin0; 
-		}
-
-		// 論理座標系表現から実際の座標系表現を作成。
-		Point getActualFromTheoretical( const Point &poi0)
-		{
-			
-			double x0 = poi0.x;
-			double y0 = poi0.y;
-			Point ret;
-			ret.x = ( x0 - theoXMin) / theoWidth  * actuWidth  + actuXMin; 
-			ret.y = ( theoYMax - y0) / theoHeight * actuHeight + actuYMin; 
-			return ret;
-
-		}
-
-		// x座標のみを算出→論理座標系表現から実際の座標系表現を作成。
-		double getXActualFromTheoretical( double x0)
-		{
-
-			double retx = ( x0 - theoXMin) / theoWidth  * actuWidth  + actuXMin; 
-			return retx;
-
-		}
-
-		// y座標のみを算出→論理座標系表現から実際の座標系表現を作成。
-		double getYActualFromTheoretical( double y0)
-		{
-			
-			double rety = ( theoYMax - y0) / theoHeight * actuHeight + actuYMin; 
-			return rety;
-
-		}
-
-		// 実際の座標系での中点のxを返す。
-		double getActualMidX( void)
-		{
-
-			return ( actuXMin + actuWidth / 2);
-
-		}
-	
-		// 実際の座標系での中点のyを返す。
-		double getActualMidY( void)
-		{
-
-			return ( actuYMin + actuHeight / 2);
-
-		}
-	
-	};
-
-	
 	Cambus cam;
 
 
@@ -1083,7 +1105,70 @@ SvgGraph createHistogramToSvg(
 
 	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
 
+	// グラフ描画領域の座標（左上、右下）
+	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
+	double graphpane_actuX2 = svgwidth - outermargin; 
+	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
+
+	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
+	double graphheight = graphpane_actuY2 - graphpane_actuY1;
+
+	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
+
+	// x軸
+	double xminval = leftvec.front();
+	double xmaxval = rightvec.back();
+	vector <double> xgridpoints = getGridPoints( xminval, xmaxval);
+	for ( auto d : xgridpoints){
+		cout << d << endl;
+	}
+	cout << endl;
+	// y軸
+	double ymaxval = *( max_element( counts.begin(), counts.end()));
+	vector <double> ygridpoints = getGridPoints( 0, ymaxval);
+	for ( auto d : ygridpoints){
+		cout << d << endl;
+	}
+	cout << endl;
+	
+	// 描画範囲は、Gridpointsのさらに5%外側にする。
+	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
+	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
+	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
+	
+	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
+	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
+	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
+	
+	// SvgGraphインスタンス内のキャンバスの設定
+	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
+	// 　　「即時に」座標変換がなされる。
+	// 　　あとでCambusオブジェクトを入れ替えてもそれまでに追加された描画部品には影響しない。
+
+	Cambus cam;
+	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
+	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
+	svgg.setCambus( cam);
+
+	svgg.setBackground( "whitesmoke");
+
 	// ここを書いていく。
+
+
+/*
+	// 背景の描画開始
+
+	// 背景色だけ塗る。
+	{
+		SvgRect r2( graphpane_actuX1, graphpane_actuY1, graphwidth, graphheight);
+		r2.addFill( "gainsboro");
+		r2.addStroke( "gainsboro");
+		svgf.addRect( r2);
+	}
+*/
+
+
 
 	return svgg;
 
@@ -1199,4 +1284,14 @@ void SvgFile :: addText( const SvgText &t0)
 {
 	filecontent.push_back( t0.getContent());
 }
+
+
+/* ***** class SvgGraph ***** */
+
+void SvgGraph :: addRectActu( const SvgRect &r0)
+{
+	svgf.addRect( r0);
+}
+
+
 
