@@ -516,11 +516,12 @@ public:
 	}
 
 	// x軸の目盛を示すグリッド線を引く。
-	void setXGridLines(
+	void drawXGridLines(
 		const std::vector <double> &xgridpoints,
 		const std::string &linecolor 
 	)
 	{
+
 		for ( auto v : xgridpoints){
 
 			Point theoP1( v, cam.theoYMax); // top
@@ -529,12 +530,184 @@ public:
 			Point actuP2 = cam.getActualFromTheoretical( theoP2);
 
 			SvgLine li( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
-			li.addStroke( /*"silver"*/ linecolor);
+			li.addStroke( linecolor);
 			li.addStrokewidth( 1);
 			addLineActu( li);;
 
 		}
+
 	}
+
+	// y軸の目盛を示すグリッド線を引く。
+	void drawYGridLines(
+		const std::vector <double> &ygridpoints,
+		const std::string &linecolor 
+	)
+	{
+
+		for ( auto v : ygridpoints){
+
+			Point theoP1( cam.theoXMin, v); // left
+			Point theoP2( cam.theoXMax, v); // right 
+			Point actuP1 = cam.getActualFromTheoretical( theoP1);
+			Point actuP2 = cam.getActualFromTheoretical( theoP2);
+
+			SvgLine li( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
+			li.addStroke( linecolor);
+			li.addStrokewidth( 1);
+			addLineActu( li);;
+
+		}
+
+	}
+
+	// 度数を示すバーを描く。
+	// 注：これを目盛グリッド線よりもあとに描くべし。グリッド線を「上書き」してほしいから。
+	void drawBins(
+		const std::vector <double> &leftvec, 
+		const std::vector <double> &rightvec, 
+		const std::vector <int>    &counts, 
+		const std::string          &color
+	)
+	{
+
+		for ( int i = 0; i < counts.size(); i++){
+
+			Point theoP1( leftvec[ i], counts[ i]); // left-top
+			Point theoP2( rightvec[ i], 0); // right-bottom 
+			Point actuP1 = cam.getActualFromTheoretical( theoP1);
+			Point actuP2 = cam.getActualFromTheoretical( theoP2);
+
+			SvgRect rect( actuP1.x, actuP1.y,actuP2.x - actuP1.x, actuP2.y - actuP1.y); 
+			rect.addFill( color);
+			rect.addStroke( color);
+			svgf.addRect( rect);
+
+		}
+
+	}
+
+	// x軸の目盛のヒゲを描く。
+	void drawXAxisTicks(
+		const std::vector <double> xgridpoints,
+		      double               ticklength,
+		const std::string          color
+	)
+	{
+
+		for ( auto v : xgridpoints){
+
+			double actuX = cam.getXActualFromTheoretical( v);
+
+			double x1 = actuX;
+			double y1 = cam.actuYMax;
+			double x2 = actuX;
+			double y2 = cam.actuYMax + ticklength; 
+
+			SvgLine li( x1, y1, x2, y2);
+			li.addStroke( color); 
+			li.addStrokewidth( 1); 
+			svgf.addLine( li);		
+
+		}
+
+	}
+
+	// y軸の目盛のヒゲを描く。
+	void drawYAxisTicks(
+		const std::vector <double> ygridpoints,
+		      double               ticklength,
+		const std::string          color
+	)
+	{
+
+		for ( auto v : ygridpoints){
+
+			double actuY = cam.getYActualFromTheoretical( v);
+
+			double x1 = cam.actuXMin;
+			double y1 = actuY;
+			double x2 = cam.actuXMin - ticklength; 
+			double y2 = actuY; 
+
+			SvgLine li( x1, y1, x2, y2);
+			li.addStroke( color); 
+			li.addStrokewidth( 1); 
+			svgf.addLine( li);		
+
+		}
+
+	}
+
+	// x軸の目盛のラベルを描く。
+	void setXAxisLabels(
+		const std::vector <double> &xgridpoints, 
+		const std::string &fontface,
+		double fontbase, // alphabetic基線の下端からのズレ（割合）
+		double fontsize,
+		double ticklength       
+	)
+	{
+
+		for ( auto v : xgridpoints){
+
+			double actuX = cam.getXActualFromTheoretical( v);
+
+			// textタグで、IEやWordはdominant-baselineが効かないらしい。
+			// （指定してもdominant-baseline="alphabetic"扱いになる。）
+			
+			// 描画領域の下端から以下の余白だけ離す。
+			// alphabeticの基線は指定座標よりfontbaseだけ上なので、その分をずらしている。
+			double actuY = cam.actuYMax + ticklength + fontsize * ( 1.0 - fontbase);
+
+			// vの桁数はどうなるのか。。 
+
+			SvgText te( actuX, actuY, v); // vはstringに変換される。
+			te.addFontfamily( fontface);
+			te.addFontsize( fontsize);
+			te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+			te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+			svgf.addText( te);		
+
+		}
+
+	}
+
+	// y軸の目盛のラベルを描く。
+	void setYAxisLabels(
+		const std::vector <double> &ygridpoints, 
+		const std::string &fontface,
+		double fontbase, // alphabetic基線の下端からのズレ（割合）
+		double fontsize,
+		double ticklength       
+	)
+	{
+
+		// y軸の目盛ラベル
+		/*
+		文字列を回転させる方法を探った→svgtest04.svgとsvgtest05.svg
+		　svgtest04.svgで2つの方法を試したが、もっとシンプルにしたかった。
+		　svgtest05.svgで、transform属性を使えばよいことがわかった。
+		*/
+		for ( auto v : ygridpoints){
+
+			double actuY = cam.getYActualFromTheoretical( v);
+
+			// alphabetic基線に合わせるためにfontbaseだけずらしている。
+			double actuX = cam.actuXMin - ticklength - fontsize * fontbase;
+			
+			SvgText te( actuX, actuY, v); // vはstringに変換される。
+			te.addFontfamily( fontface /*"Arial,san-serif"*/);
+			te.addFontsize( fontsize);
+			te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+			te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+			te.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
+			svgf.addText( te);				
+
+		}
+
+	}
+
 
 	// 座標変換せずに描画
 	// defined later
@@ -1193,9 +1366,21 @@ SvgGraph createHistogram(
 
 	svgg.setGraphPaneColor( "gainsboro");
 
-	svgg.setXGridLines( xgridpoints, "silver");
+	svgg.drawXGridLines( xgridpoints, "silver");
+	svgg.drawYGridLines( ygridpoints, "silver");
+
+	svgg.drawBins( leftvec, rightvec, counts, "gray");
+
+	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
+	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
+
+	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
+	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+
 
 	// ここを書いていく。
+	// グラフタイトル、x軸タイトル、y軸タイトル、枠線
 
 
 
