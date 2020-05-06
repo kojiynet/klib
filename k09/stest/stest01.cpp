@@ -242,10 +242,8 @@ public:
 	}
 
 	// ファイルに書き出すメソッド
-	// 書き込み用ファイルを開く。
-
 	// 正常終了でtrue、異常終了でfalseを返す。
-
+	// 
 	// appendのデフォルト値はtrue、overwriteのデフォルト値はfalse、askのデフォルト値はtrue。
 	// 同じファイル名のファイルがすでに存在する場合の挙動は以下のとおり。
 	// appendがtrueなら、追加書き込みモードで開く。overwriteとaskは無視する。
@@ -488,7 +486,7 @@ public:
 	SvgGraph(
 		double w0, double h0, double x1, double y1, double x2, double y2
 	)
-	 : svgf( w0, h0, x1, y1, x2, y2)
+	 : svgf( w0, h0, x1, y1, x2, y2), svgwidth( w0), svgheight( h0)
 	{}
 
 	void setCambus( const Cambus &c0)
@@ -504,11 +502,51 @@ public:
 		addRectActu( r1);
 	}
 
+	// graphpane = cambus の背景色を塗る。
+	void setGraphPaneColor( const string &cambusc)
+	{
+		
+		{
+			SvgRect r( cam.actuXMin, cam.actuYMin, cam.actuWidth, cam.actuHeight);
+			r.addFill( cambusc);
+			r.addStroke( cambusc);
+			addRectActu( r);
+		}
+
+	}
+
+	// x軸の目盛を示すグリッド線を引く。
+	void setXGridLines(
+		const std::vector <double> &xgridpoints,
+		const std::string &linecolor 
+	)
+	{
+		for ( auto v : xgridpoints){
+
+			Point theoP1( v, cam.theoYMax); // top
+			Point theoP2( v, cam.theoYMin); // bottom 
+			Point actuP1 = cam.getActualFromTheoretical( theoP1);
+			Point actuP2 = cam.getActualFromTheoretical( theoP2);
+
+			SvgLine li( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
+			li.addStroke( /*"silver"*/ linecolor);
+			li.addStrokewidth( 1);
+			addLineActu( li);;
+
+		}
+	}
+
 	// 座標変換せずに描画
 	// defined later
 	void addRectActu( const SvgRect &); 
+	void addLineActu( const SvgLine &); 
 
-	bool writeFile( const string &fn0, bool append = false, bool overwrite = false, bool ask = true);
+	// ファイルに書き出すメソッド
+	// 正常終了でtrue、異常終了でfalseを返す。
+	bool writeFile( const string &fn0)
+	{
+		return svgf.writeFile( fn0);
+	}
 
 }; 
 
@@ -1084,7 +1122,7 @@ void drawHistogramToSvg(
 
 }
 
-SvgGraph createHistogramToSvg(
+SvgGraph createHistogram(
 	const std::vector <double> &leftvec,
 	const std::vector <double> &rightvec,
 	const std::vector <int> &counts,
@@ -1153,20 +1191,12 @@ SvgGraph createHistogramToSvg(
 
 	svgg.setBackground( "whitesmoke");
 
+	svgg.setGraphPaneColor( "gainsboro");
+
+	svgg.setXGridLines( xgridpoints, "silver");
+
 	// ここを書いていく。
 
-
-/*
-	// 背景の描画開始
-
-	// 背景色だけ塗る。
-	{
-		SvgRect r2( graphpane_actuX1, graphpane_actuY1, graphwidth, graphheight);
-		r2.addFill( "gainsboro");
-		r2.addStroke( "gainsboro");
-		svgf.addRect( r2);
-	}
-*/
 
 
 
@@ -1291,6 +1321,11 @@ void SvgFile :: addText( const SvgText &t0)
 void SvgGraph :: addRectActu( const SvgRect &r0)
 {
 	svgf.addRect( r0);
+}
+
+void SvgGraph :: addLineActu( const SvgLine &l0)
+{
+	svgf.addLine( l0);
 }
 
 
