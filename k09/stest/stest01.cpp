@@ -616,8 +616,8 @@ public:
 	// y軸の目盛のヒゲを描く。
 	void drawYAxisTicks(
 		const std::vector <double> ygridpoints,
-		      double               ticklength,
-		const std::string          color
+		double ticklength,
+		const std::string color
 	)
 	{
 
@@ -708,6 +708,86 @@ public:
 
 	}
 
+	// グラフタイトルを表示
+	void setGraphTitle(
+		const std::string &title,
+		const std::string &fontface,
+		double fontbase, // alphabetic基線の下端からのズレ（割合）
+		double fontsize,
+		double outermargin 
+	)
+	{
+
+		double actuX = std::round( svgwidth / 2);
+		double actuY = outermargin + fontsize * ( 1 - fontbase);
+
+		SvgText te( actuX, actuY, title);
+		te.addFontfamily( fontface /*"Arial,san-serif"*/);
+		te.addFontsize( fontsize);
+		te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		svgf.addText( te);	
+
+	}
+
+	// x軸タイトルを表示
+	void setXAxisTitle(
+		const std::string &title,
+		const std::string &fontface,
+		double fontbase, // alphabetic基線の下端からのズレ（割合）
+		double fontsize,
+		double outermargin 
+	)
+	{
+
+		double actuX = std::round( cam.getActualMidX());
+		double actuY = svgheight - outermargin - fontsize * fontbase; 
+
+		SvgText te( actuX, actuY, title);
+		te.addFontfamily( fontface);
+		te.addFontsize( fontsize);
+		te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		svgf.addText( te);	
+
+	}
+
+	// y軸タイトルを表示
+	void setYAxisTitle(
+		const std::string &title,
+		const std::string &fontface,
+		double fontbase, // alphabetic基線の下端からのズレ（割合）
+		double fontsize,
+		double outermargin 
+	)
+	{
+
+		double actuX = outermargin + fontsize * ( 1 - fontbase);
+		double actuY = std::round( cam.getActualMidY());
+
+		SvgText te( actuX, actuY, title);
+		te.addFontfamily( fontface);
+		te.addFontsize( fontsize);
+		te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
+		te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		te.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
+		svgf.addText( te);	
+
+	}
+
+	// graphpaneの枠線を描画
+	// 注：この描画は最後にすべき。
+	// 　　fillは透過させる。
+	void drawGraphPaneFrame(
+		const std::string color
+	)
+	{
+		SvgRect r( cam.actuXMin, cam.actuYMin, cam.actuWidth, cam.actuHeight);
+		r.addFillopacity( 0); // 完全透過
+		r.addStroke( color);
+		r.addStrokewidth( 1);
+		svgf.addRect( r);
+	}
 
 	// 座標変換せずに描画
 	// defined later
@@ -822,10 +902,12 @@ int main( int, char *[])
 	drawHistogramToSvg( "stest01out02.svg", leftvec, rightvec, counts, true); // アニメバージョン
 
 
-	// ↓ヒストグラムをこの中でつくりつつ、、SvgGraphクラスをつくる。
 	SvgGraph svgg = createHistogram( leftvec, rightvec, counts);
 	svgg.writeFile( "stest01out03.svg");
 
+	// drawHistogramToSvg()のアニメーションをどうするか？
+	// →drawHistogramToSvg()を消す。
+	
 
 
 	return 0;
@@ -1303,6 +1385,10 @@ SvgGraph createHistogram(
 )
 {
 
+	string graph_title = "Frequency - restricted to v less than 2500"s;
+	string xaxis_title = "Household Income";
+	string yaxis_title = "#Cases";
+
 	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
 	double svgwidth = 500;
 	double svgheight = 500;
@@ -1362,6 +1448,9 @@ SvgGraph createHistogram(
 	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
 	svgg.setCambus( cam);
 
+
+	// 背景の描画開始
+
 	svgg.setBackground( "whitesmoke");
 
 	svgg.setGraphPaneColor( "gainsboro");
@@ -1369,7 +1458,17 @@ SvgGraph createHistogram(
 	svgg.drawXGridLines( xgridpoints, "silver");
 	svgg.drawYGridLines( ygridpoints, "silver");
 
+	// 背景の描画終了
+
+
+	// メインの情報の描画終了
+
 	svgg.drawBins( leftvec, rightvec, counts, "gray");
+
+	// メインの情報の描画終了
+
+
+	// 周辺情報記載の開始
 
 	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
 	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
@@ -1378,13 +1477,20 @@ SvgGraph createHistogram(
 	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
 	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
 
+	svgg.setGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
+	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
 
+	svgg.setXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	svgg.setYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	
+	// 周辺情報記載の終了
+
+	// 枠線
+	svgg.drawGraphPaneFrame( "black");
+	
 	// ここを書いていく。
-	// グラフタイトル、x軸タイトル、y軸タイトル、枠線
-
-
-
-
+	// 枠線
+	
 	return svgg;
 
 }
