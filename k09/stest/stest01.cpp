@@ -279,11 +279,12 @@ class SvgRect {
 private:
 	
 	std::vector <std::string> attrvec;
+	std::vector <std::string> animatevec;
 
 public:
 
 	SvgRect( double x0, double y0, double w0, double h0)
-	 : attrvec()
+	 : attrvec(), animatevec()
 	{
 		std::stringstream ss;
 		ss << R"(x=")"      << x0 << R"(")" << " "
@@ -319,15 +320,51 @@ public:
 		attrvec.push_back( ss.str());
 	}
 
+	void addAnimate( const std::string &attr, double v1, double v2, double sec)
+	{
+		std::stringstream ss;
+		ss << "<animate "
+		   << "attributeName=\"" << attr << "\"" << " "
+		   << "begin=\"0s\"" << " " 
+		   << "dur=\"" << sec << "\"" << " "
+		   << "from=\"" << v1 << "\"" << " " 
+		   << "to=\"" << v2 << "\"" << " " 
+		   << "repeatCount=\"1\""
+		   << "/>";
+		animatevec.push_back( ss.str());
+	}
+
 	std::string getContent( void) const
 	{
-		std::string ret = "<rect";
-		for ( const auto &attr : attrvec){
-			ret += " ";
-			ret += attr;
+
+		std::string ret;
+
+		if ( animatevec.size() < 1){
+		
+			ret = "<rect";
+			for ( const auto &attr : attrvec){
+				ret += " ";
+				ret += attr;
+			}
+			ret += " />";
+		
+		} else {
+		
+			ret = "<rect";
+			for ( const auto &attr : attrvec){
+				ret += " ";
+				ret += attr;
+			}
+			ret += " >";
+			for ( const auto &animatetag : animatevec){
+				ret += animatetag;
+			}
+			ret += "</rect>";
+		
 		}
-		ret += " />";
+
 		return ret;
+
 	}
 
 };
@@ -494,6 +531,7 @@ public:
 		cam = c0;
 	}
 
+	// SVG全体の背景色を設定
 	void setBackground( const string &b0)
 	{
 		SvgRect r1( 0, 0, svgwidth, svgheight);
@@ -567,7 +605,8 @@ public:
 		const std::vector <double> &leftvec, 
 		const std::vector <double> &rightvec, 
 		const std::vector <int>    &counts, 
-		const std::string          &color
+		const std::string          &color,
+		bool animated = false
 	)
 	{
 
@@ -578,10 +617,26 @@ public:
 			Point actuP1 = cam.getActualFromTheoretical( theoP1);
 			Point actuP2 = cam.getActualFromTheoretical( theoP2);
 
-			SvgRect rect( actuP1.x, actuP1.y,actuP2.x - actuP1.x, actuP2.y - actuP1.y); 
-			rect.addFill( color);
-			rect.addStroke( color);
-			svgf.addRect( rect);
+			if ( animated == true ){
+
+				double rect_height = actuP2.y - actuP1.y;
+				SvgRect rect( actuP1.x, actuP1.y, actuP2.x - actuP1.x, rect_height); 
+				rect.addFill( color);
+				rect.addStroke( color);
+
+				rect.addAnimate( "height", 0, rect_height, 1);
+				rect.addAnimate( "y", actuP2.y, actuP1.y, 1);
+
+				svgf.addRect( rect);
+
+			} else {
+
+				SvgRect rect( actuP1.x, actuP1.y,actuP2.x - actuP1.x, actuP2.y - actuP1.y); 
+				rect.addFill( color);
+				rect.addStroke( color);
+				svgf.addRect( rect);
+
+			}
 
 		}
 
@@ -901,12 +956,20 @@ int main( int, char *[])
 	drawHistogramToSvg( "stest01out01.svg", leftvec, rightvec, counts);
 	drawHistogramToSvg( "stest01out02.svg", leftvec, rightvec, counts, true); // アニメバージョン
 
+	{
+		SvgGraph svgg = createHistogram( leftvec, rightvec, counts);
+		svgg.writeFile( "stest01out03.svg");
+	}
+	{
+		SvgGraph svgg = createHistogram( leftvec, rightvec, counts, true); // アニメバージョン
+		svgg.writeFile( "stest01out04.svg");
+	}
 
-	SvgGraph svgg = createHistogram( leftvec, rightvec, counts);
-	svgg.writeFile( "stest01out03.svg");
+	// drawHistogramToSvg()のアニメーションを回収した。
+	// →drawHistogramToSvg()を消していく。コメントを回収しながら。
 
-	// drawHistogramToSvg()のアニメーションをどうするか？
-	// →drawHistogramToSvg()を消す。
+	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
+	// （それを目的としていたのに忘れていた）
 	
 
 
@@ -1462,8 +1525,11 @@ SvgGraph createHistogram(
 
 
 	// メインの情報の描画終了
-
-	svgg.drawBins( leftvec, rightvec, counts, "gray");
+	if ( animated == true){
+		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
+	} else {
+		svgg.drawBins( leftvec, rightvec, counts, "gray");
+	}
 
 	// メインの情報の描画終了
 
