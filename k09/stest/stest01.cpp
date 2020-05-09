@@ -156,7 +156,7 @@ int main( int, char *[])
 		svgg.writeFile( "stest01out02.svg");
 	}
 
-	// SvgGraphのメソッド定義を宣言外に書いていく。
+	// createHistogram()のArgumentを指定していく。タイトルとか。
 
 	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
 	// （それを目的としていたのに忘れていた）
