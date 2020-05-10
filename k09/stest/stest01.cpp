@@ -148,18 +148,26 @@ int main( int, char *[])
 	ft.getRangeVectors( leftvec, rightvec);
 
 	{
-		SvgGraph svgg = createHistogram( leftvec, rightvec, counts);
+		SvgHistogramMaker histm( leftvec, rightvec, counts);
+		histm.setGraphTitle( "Frequency - restricted to v less than 2500");
+		histm.setXAxisTitle( "Household Income");
+		histm.setYAxisTitle( "#Cases");
+		SvgGraph svgg = histm.createGraph();
 		svgg.writeFile( "stest01out01.svg");
 	}
 	{
-		SvgGraph svgg = createHistogram( leftvec, rightvec, counts, true); // アニメバージョン
+		SvgHistogramMaker histm( leftvec, rightvec, counts, true); // アニメバージョン
+		histm.setGraphTitle( "Frequency - restricted to v less than 2500");
+		histm.setXAxisTitle( "Household Income");
+		histm.setYAxisTitle( "#Cases");
+		SvgGraph svgg = histm.createGraph();
 		svgg.writeFile( "stest01out02.svg");
 	}
 
-	// createHistogram()のArgumentを指定していく。タイトルとか。
-
 	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
 	// （それを目的としていたのに忘れていた）
+
+	// SvgGraphのGraphPaneの枠外に描画が出ないように、VierPort設定？
 
 	// pclub06の内容を回収する。散布図と、円。
 	
