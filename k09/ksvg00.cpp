@@ -38,7 +38,11 @@ class SvgLine;
 class SvgText;
 
 class SvgGraph;
-class SvgHistogram;
+class GraphAddable;
+class GraphBasicShape;
+class GraphRect;
+
+class SvgHistogramMaker;
 
 
 /* ********** Enum Definitions ********** */
@@ -57,8 +61,8 @@ struct Point {
 	double x, y;
 
 	Point( void)
-		: x( std::numeric_limits<double>::quiet_NaN()),
-		y( std::numeric_limits<double>::quiet_NaN())
+	: x( std::numeric_limits<double>::quiet_NaN()),
+	  y( std::numeric_limits<double>::quiet_NaN())
 	{}
 	
 	Point( double x0, double y0) : x( x0), y( y0)
@@ -90,7 +94,7 @@ struct Cambus {
 	}
 
 	// 論理座標系表現から実際の座標系表現を作成。
-	Point getActualFromTheoretical( const Point &poi0)
+	Point getActualFromTheoretical( const Point &poi0) const
 	{
 		
 		double x0 = poi0.x;
@@ -103,7 +107,7 @@ struct Cambus {
 	}
 
 	// x座標のみを算出→論理座標系表現から実際の座標系表現を作成。
-	double getXActualFromTheoretical( double x0)
+	double getXActualFromTheoretical( double x0) const
 	{
 
 		double retx = ( x0 - theoXMin) / theoWidth  * actuWidth  + actuXMin; 
@@ -112,7 +116,7 @@ struct Cambus {
 	}
 
 	// y座標のみを算出→論理座標系表現から実際の座標系表現を作成。
-	double getYActualFromTheoretical( double y0)
+	double getYActualFromTheoretical( double y0) const
 	{
 		
 		double rety = ( theoYMax - y0) / theoHeight * actuHeight + actuYMin; 
@@ -121,7 +125,7 @@ struct Cambus {
 	}
 
 	// 実際の座標系での中点のxを返す。
-	double getActualMidX( void)
+	double getActualMidX( void) const
 	{
 
 		return ( actuXMin + actuWidth / 2);
@@ -129,7 +133,7 @@ struct Cambus {
 	}
 
 	// 実際の座標系での中点のyを返す。
-	double getActualMidY( void)
+	double getActualMidY( void) const
 	{
 
 		return ( actuYMin + actuHeight / 2);
@@ -292,6 +296,8 @@ private:
 
 public:
 
+	SvgGraph( void) = delete; 
+
 	SvgGraph(
 		double w0, double h0, double x1, double y1, double x2, double y2
 	)
@@ -303,6 +309,9 @@ public:
 	void setBackground( const std::string &);
 
 	void setGraphPaneColor( const std::string &);
+
+	void startDrawingGraphPane( void);
+	void endDrawingGraphPane( void);
 
 	void drawXGridLines( 
 		const std::vector <double> &, const std::string &
@@ -362,6 +371,8 @@ public:
 	);
 
 	void drawGraphPaneFrame( const std::string);
+
+	void addElement( const GraphAddable &);
 	
 	void addRectActu( const SvgRect &); 
 	void addLineActu( const SvgLine &); 
@@ -369,6 +380,60 @@ public:
 	bool writeFile( const std::string &);
 
 }; 
+
+// interface for addable SvgGraph elements 
+class GraphAddable {
+public:
+	virtual std::string getContent( const Cambus &) const = 0;
+};
+
+// Base class for GraphRect, etc.
+class GraphBasicShape {
+
+protected:
+
+	std::string fill;
+	std::string stroke;
+	std::string strokewidth;
+	std::string fillopacity;
+
+	std::string getBasicShapeAttr( void) const;
+
+public:
+
+	GraphBasicShape( void);
+	virtual ~GraphBasicShape( void);
+
+	virtual void setFill( const std::string &s0);
+	virtual void setStroke( const std::string &s0);
+	virtual void setStrokewidth( double v0);
+	virtual void setFillopacity( double v0);
+
+};
+
+// 論理座標系で指定する。(x,y)は「左下」の点。
+class GraphRect : public GraphBasicShape, public GraphAddable {
+
+private:
+
+	double x;
+	double y;
+	double w;
+	double h;
+
+public:
+
+	GraphRect( double x0, double y0, double w0, double h0);
+	~GraphRect( void);
+
+// やり方考え中。
+// ファンクタ的なもので、アニメーションを示すタグを出力する？
+// この際、ファンクタに、camの参照と、GraphRect自身の参照を渡す？
+//	void addAnimateBuildup( double v1, double v2, double sec);
+
+	std::string getContent( const Cambus &cam) const;
+
+};
 
 class SvgHistogramMaker {
 
@@ -394,6 +459,8 @@ private:
 	double axis_ticklength;
 
 public:
+
+	SvgHistogramMaker( void) = delete;
 
 	SvgHistogramMaker( 
 		const std::vector <double> &lv0,
@@ -963,6 +1030,41 @@ setGraphPaneColor( const std::string &cambuscolor)
 
 }
 
+// GraphPaneでの描画を開始する。
+// GraphPaneでの描画をはみ出さないようにする。
+// 座標系は変化しない。
+// 必ずendDrawingGraphPane()を終了時に実行すべし。
+void 
+SvgGraph :: 
+startDrawingGraphPane( void)
+{
+	double actuX = cam.actuXMin;
+	double actuY = cam.actuYMin;
+	double paneWidth = cam.actuWidth;
+	double paneHeight = cam.actuHeight;
+
+	stringstream ss;
+	ss << "<svg "
+	   << "x=\"" << actuX << "\"" << " "
+	   << "y=\"" << actuY << "\"" << " " 
+	   << "width=\"" << paneWidth << "\"" << " " 
+	   << "height=\"" << paneHeight << "\"" << " " 
+	   << "viewBox=\""
+	       << actuX << " " << actuY << " " 
+		   << paneWidth << " " << paneHeight
+	   << "\"" << ">";
+	svgf.addFileContent( ss.str());
+
+}
+
+// GraphPaneでの描画を終了しる。
+void 
+SvgGraph :: 
+endDrawingGraphPane( void)
+{
+	svgf.addFileContent( "</svg>");
+}
+
 // x軸の目盛を示すグリッド線を引く。
 void 
 SvgGraph :: 
@@ -982,7 +1084,7 @@ drawXGridLines(
 		SvgLine li( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
 		li.addStroke( linecolor);
 		li.addStrokewidth( 1);
-		addLineActu( li);;
+		addLineActu( li);
 
 	}
 
@@ -1035,6 +1137,8 @@ drawBins(
 
 		if ( animated == true ){
 
+			// GraphRect.addAnimateBuildup()のようなものを書きたい。
+
 			double rect_height = actuP2.y - actuP1.y;
 			SvgRect rect( actuP1.x, actuP1.y, actuP2.x - actuP1.x, rect_height); 
 			rect.addFill( color);
@@ -1047,10 +1151,10 @@ drawBins(
 
 		} else {
 
-			SvgRect rect( actuP1.x, actuP1.y,actuP2.x - actuP1.x, actuP2.y - actuP1.y); 
-			rect.addFill( color);
-			rect.addStroke( color);
-			svgf.addElement( rect);
+			GraphRect rect( leftvec[ i], 0, rightvec[ i] - leftvec[ i], counts[ i]);
+			rect.setFill( color);
+			rect.setStroke( color);
+			addElement( rect); 
 
 		}
 
@@ -1334,6 +1438,15 @@ drawGraphPaneFrame(
 	svgf.addElement( r);
 }
 
+// 要素オブジェクトを追加。
+// elem内でcamを使って座標変換することになる。
+void 
+SvgGraph :: 
+addElement( const GraphAddable &elem)
+{
+	svgf.addFileContent( elem.getContent( cam));
+}
+
 // 座標変換せずに描画
 void 
 SvgGraph :: 
@@ -1359,6 +1472,151 @@ writeFile( const std::string &fn0)
 	return svgf.writeFile( fn0);
 }
 
+
+/* ***** class GraphBasicShape ***** */
+
+std::string 
+GraphBasicShape :: 
+getBasicShapeAttr( void) const
+{
+
+	std::stringstream ss;
+
+	if ( fill.size() > 0){
+		ss << "fill=" << "\"" << fill << "\"" << " ";
+	}
+	
+	if ( stroke.size() > 0){
+		ss << "stroke=" << "\"" << stroke << "\"" << " ";
+	}
+
+	if ( strokewidth.size() > 0){
+		ss << "stroke-width=" << "\"" << strokewidth << "\"" << " ";
+	}
+
+	if ( fillopacity.size() > 0){
+		ss << "fill-opacity=" << "\"" << fillopacity << "\"" << " ";
+	}
+
+	return ss.str();
+
+}
+
+GraphBasicShape :: 
+GraphBasicShape( void)
+: fill(), stroke(), strokewidth(), fillopacity()
+{}
+
+//virtual 
+GraphBasicShape :: 
+~GraphBasicShape( void)
+{}
+
+//virtual 
+void 
+GraphBasicShape :: 
+setFill( const std::string &s0)
+{
+	fill = s0;
+}
+
+//virtual 
+void 
+GraphBasicShape :: 
+setStroke( const std::string &s0)
+{
+	stroke = s0;
+}
+
+//virtual 
+void 
+GraphBasicShape :: 
+setStrokewidth( double v0)
+{
+	std::stringstream ss;
+	ss << v0;
+	strokewidth = ss.str();
+}
+
+//virtual 
+void 
+GraphBasicShape :: 
+setFillopacity( double v0)
+{
+	std::stringstream ss;
+	ss << v0;
+	fillopacity = ss.str();
+}
+
+
+/* ***** class SvgRect ***** */
+
+GraphRect :: 
+GraphRect( double x0, double y0, double w0, double h0)
+: GraphBasicShape(), x( x0), y( y0), w( w0), h( h0)
+{}
+
+GraphRect :: 
+~GraphRect( void)
+{}
+
+std::string 
+GraphRect :: 
+getContent( const Cambus &cam) 
+const
+{
+
+	double leftx   = cam.getXActualFromTheoretical( x);
+	double bottomy = cam.getYActualFromTheoretical( y);
+	double rightx  = cam.getXActualFromTheoretical( x + w);
+	double topy    = cam.getYActualFromTheoretical( y + h);
+	double actuw   = rightx - leftx; 
+	double actuh   = bottomy - topy;
+
+	std::stringstream ss;
+
+	ss << "<rect" << " ";
+
+	ss <<
+		R"(x=")"      << leftx << R"(")" << " " << 
+		R"(y=")"      << topy  << R"(")" << " " << 
+		R"(width=")"  << actuw << R"(")" << " " << 
+		R"(height=")" << actuh << R"(")" << " ";
+	
+	ss << getBasicShapeAttr() << ">";
+
+	ss << "</rect>";
+
+	return ss.str();
+
+
+/*
+	if ( animatevec.size() < 1){
+	
+		ret = "<rect";
+		for ( const auto &attr : attrvec){
+			ret += " ";
+			ret += attr;
+		}
+		ret += " />";
+	
+	} else {
+	
+		ret = "<rect";
+		for ( const auto &attr : attrvec){
+			ret += " ";
+			ret += attr;
+		}
+		ret += " >";
+		for ( const auto &animatetag : animatevec){
+			ret += animatetag;
+		}
+		ret += "</rect>";
+	
+	}
+*/
+
+}
 
 
 /* ***** class SvgHistogramMaker ***** */
@@ -1476,21 +1734,25 @@ createGraph( void)
 
 	svgg.setGraphPaneColor( "gainsboro");
 
-	svgg.drawXGridLines( xgridpoints, "silver");
-	svgg.drawYGridLines( ygridpoints, "silver");
-
 	// 背景の描画終了
 
 
+	// 描画領域への描画開始
 
-	// メインの情報の描画終了
+	svgg.startDrawingGraphPane();
+
+	svgg.drawXGridLines( xgridpoints, "silver");
+	svgg.drawYGridLines( ygridpoints, "silver");
+
 	if ( animated == true){
 		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
 	} else {
 		svgg.drawBins( leftvec, rightvec, counts, "gray");
 	}
 
-	// メインの情報の描画終了
+	svgg.endDrawingGraphPane();
+
+	// 描画領域への描画終了
 
 
 	// 周辺情報記載の開始
