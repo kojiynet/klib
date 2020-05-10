@@ -164,10 +164,11 @@ int main( int, char *[])
 		svgg.writeFile( "stest01out02.svg");
 	}
 
+
 	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
 	// （それを目的としていたのに忘れていた）
-
-	// SvgGraphのGraphPaneの枠外に描画が出ないように、VierPort設定？
+	// →途中。SvgGraph::drawBins()のアニメで止まっている。
+	// →そのあと、GraphLineをつくってグリッド線をそれで描く。
 
 	// pclub06の内容を回収する。散布図と、円。
 	
