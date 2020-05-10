@@ -38,19 +38,13 @@ class SvgLine;
 class SvgText;
 
 class SvgGraph;
+class SvgHistogram;
 
 
 /* ********** Enum Definitions ********** */
 
 
 /* ********** Function Declarations ********** */
-
-SvgGraph createHistogram(
-	const std::vector <double> &,
-	const std::vector <double> &,
-	const std::vector <int> &,
-	bool = false
-);
 
 std::vector <double>
 getGridPoints( double, double, int = 4, bool = true, bool = true);
@@ -376,6 +370,50 @@ public:
 
 }; 
 
+class SvgHistogramMaker {
+
+private:
+
+	std::vector <double> leftvec; 
+	std::vector <double> rightvec; 
+	std::vector <int> counts; 
+	bool animated; 
+
+	std::string graph_title;
+	std::string xaxis_title; 
+	std::string yaxis_title; 
+
+	double svgwidth;
+	double svgheight;
+	double outermargin;
+	double graph_title_fontsize;
+	double graph_title_margin; // グラフタイトルの下のマージン
+	double axis_title_fontsize;
+	double axis_title_margin; // 軸タイトルと軸ラベルの間のマージン
+	double axis_label_fontsize;
+	double axis_ticklength;
+
+public:
+
+	SvgHistogramMaker( 
+		const std::vector <double> &lv0,
+		const std::vector <double> &rv0,
+		const std::vector <int> &c0,
+		bool an0 = false
+	);
+
+	~SvgHistogramMaker( void);
+
+	void setDefaults( void);
+	
+	void setGraphTitle( const std::string &s);	
+	void setXAxisTitle( const std::string &s);	
+	void setYAxisTitle( const std::string &s);
+	
+	SvgGraph createGraph( void);
+
+};
+
 
 /* ********** Global Variables ********** */
 
@@ -384,156 +422,6 @@ public:
 
 
 /* ********** Function Definitions ********** */
-
-SvgGraph createHistogram(
-	const std::vector <double> &leftvec,
-	const std::vector <double> &rightvec,
-	const std::vector <int> &counts,
-	bool animated /*= false*/
-)
-{
-
-	std::string graph_title = "Frequency - restricted to v less than 2500";
-	std::string xaxis_title = "Household Income";
-	std::string yaxis_title = "#Cases";
-
-	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
-	double svgwidth = 500;
-	double svgheight = 500;
-	double outermargin = 20;
-	double graph_title_fontsize = 20;
-	double graph_title_margin = 10; // グラフタイトルの下のマージン
-	double axis_title_fontsize = 20;
-	double axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
-	double axis_label_fontsize = 14;
-	double axis_ticklength = 5;
-
-	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
-
-	// グラフ描画領域の座標（左上、右下）
-	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
-	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
-	double graphpane_actuX2 = svgwidth - outermargin; 
-	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
-
-	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
-	double graphheight = graphpane_actuY2 - graphpane_actuY1;
-
-	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
-
-	// x軸
-	double xminval = leftvec.front();
-	double xmaxval = rightvec.back();
-	std::vector <double> xgridpoints = getGridPoints( xminval, xmaxval);
-	/*
-	for ( auto d : xgridpoints){
-		std::cout << d << std::endl;
-	}
-	std::cout << std::endl;
-	*/
-
-	// y軸
-	double yminval = 0;
-	double ymaxval = *( max_element( counts.begin(), counts.end()));
-	std::vector <double> ygridpoints = getGridPoints( yminval, ymaxval);
-	/*
-	for ( auto d : ygridpoints){
-		std::cout << d << std::endl;
-	}
-	std::cout << std::endl;
-	*/
-	
-	// 描画範囲は、Gridpointsのさらに5%外側にする。
-	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
-	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
-	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
-	
-	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
-	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
-	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
-	
-	// SvgGraphインスタンス内のキャンバスの設定
-	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
-	// 　　「即時に」座標変換がなされる。
-	// 　　あとでCambusオブジェクトを入れ替えてもそれまでに追加された描画部品には影響しない。
-
-	Cambus cam;
-	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
-	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
-	svgg.setCambus( cam);
-
-
-	// 背景の描画開始
-
-	svgg.setBackground( "whitesmoke");
-
-	svgg.setGraphPaneColor( "gainsboro");
-
-	svgg.drawXGridLines( xgridpoints, "silver");
-	svgg.drawYGridLines( ygridpoints, "silver");
-
-	// 背景の描画終了
-
-
-
-	// メインの情報の描画終了
-	if ( animated == true){
-		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
-	} else {
-		svgg.drawBins( leftvec, rightvec, counts, "gray");
-	}
-
-	// メインの情報の描画終了
-
-
-	// 周辺情報記載の開始
-
-	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
-	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
-
-	// 目盛ラベルの数値の桁数はどうなるのか。。
-
-	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
-	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-
-	svgg.setGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
-	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
-
-	svgg.setXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	svgg.setYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	
-	// 周辺情報記載の終了
-
-	// TODO: 軸の単位の記載→優先順位は低い。
-
-	// SVGアニメをパワポに貼っても動かないらしい。
-
-	// textタグで、IEやWordはdominant-baselineが効かないらしい。
-	// （指定してもdominant-baseline="alphabetic"扱いになる。）
-
-	// 以上、<g>での一括指定ができるところが多いが、とりあえず無視する。
-
-
-
-	// 枠線
-	svgg.drawGraphPaneFrame( "black");
-
-
-
-	// TODO: フォントサイズを自動調節する？
-
-	// SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
-	// （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
-	// svgタグのサイズとviewBoxのサイズを合わせたい。
-	
-	// ここを書いていく。
-
-	
-	return svgg;
-
-}
-
 
 // [min0, max0]に、いい感じの間隔で点をとる。
 // k0個以上で最小の点を返す。
@@ -1470,3 +1358,189 @@ writeFile( const std::string &fn0)
 {
 	return svgf.writeFile( fn0);
 }
+
+
+
+/* ***** class SvgHistogramMaker ***** */
+
+SvgHistogramMaker :: 
+SvgHistogramMaker( 
+	const std::vector <double> &lv0,
+	const std::vector <double> &rv0,
+	const std::vector <int> &c0,
+	bool an0 // = false
+) : leftvec( lv0), rightvec( rv0), counts( c0), animated( an0)
+{
+	setDefaults();
+}
+
+SvgHistogramMaker :: 
+~SvgHistogramMaker( void)
+{}
+
+void 
+SvgHistogramMaker :: 
+setDefaults( void)
+{
+
+	graph_title = "(No Title)";
+	xaxis_title = "x (Not Labeled)";
+	yaxis_title = "y (Not Labeled)";
+
+	// default values
+	svgwidth = 500;
+	svgheight = 500;
+	outermargin = 20;
+	graph_title_fontsize = 20;
+	graph_title_margin = 10; // グラフタイトルの下のマージン
+	axis_title_fontsize = 20;
+	axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
+	axis_label_fontsize = 14;
+	axis_ticklength = 5;
+
+}
+
+void 
+SvgHistogramMaker :: 
+setGraphTitle( const std::string &s)
+{
+	graph_title = s;
+}
+
+void 
+SvgHistogramMaker :: 
+setXAxisTitle( const std::string &s)
+{
+	xaxis_title = s;
+}
+
+void 
+SvgHistogramMaker :: 
+setYAxisTitle( const std::string &s)
+{
+	yaxis_title = s;
+}
+
+SvgGraph
+SvgHistogramMaker :: 
+createGraph( void)
+{
+
+	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
+
+	// グラフ描画領域の座標（左上、右下）
+	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
+	double graphpane_actuX2 = svgwidth - outermargin; 
+	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
+
+	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
+	double graphheight = graphpane_actuY2 - graphpane_actuY1;
+
+	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
+
+	// x軸
+	double xminval = leftvec.front();
+	double xmaxval = rightvec.back();
+	std::vector <double> xgridpoints = getGridPoints( xminval, xmaxval);
+
+	// y軸
+	double yminval = 0;
+	double ymaxval = *( max_element( counts.begin(), counts.end()));
+	std::vector <double> ygridpoints = getGridPoints( yminval, ymaxval);
+	
+	
+	// 描画範囲は、Gridpointsのさらに5%外側にする。
+	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
+	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
+	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
+	
+	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
+	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
+	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
+	
+	// SvgGraphインスタンス内のキャンバスの設定
+	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
+	// 　　「即時に」座標変換がなされる。
+	// 　　あとでCambusオブジェクトを入れ替えてもそれまでに追加された描画部品には影響しない。
+
+	Cambus cam;
+	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
+	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
+	svgg.setCambus( cam);
+
+
+	// 背景の描画開始
+
+	svgg.setBackground( "whitesmoke");
+
+	svgg.setGraphPaneColor( "gainsboro");
+
+	svgg.drawXGridLines( xgridpoints, "silver");
+	svgg.drawYGridLines( ygridpoints, "silver");
+
+	// 背景の描画終了
+
+
+
+	// メインの情報の描画終了
+	if ( animated == true){
+		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
+	} else {
+		svgg.drawBins( leftvec, rightvec, counts, "gray");
+	}
+
+	// メインの情報の描画終了
+
+
+	// 周辺情報記載の開始
+
+	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
+	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
+
+	// 目盛ラベルの数値の桁数はどうなるのか。。
+
+	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
+	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+
+	svgg.setGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
+	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
+
+	svgg.setXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	svgg.setYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	
+	// 周辺情報記載の終了
+
+	// TODO: 軸の単位の記載→優先順位は低い。
+
+	// SVGアニメをパワポに貼っても動かないらしい。
+
+	// textタグで、IEやWordはdominant-baselineが効かないらしい。
+	// （指定してもdominant-baseline="alphabetic"扱いになる。）
+
+	// 以上、<g>での一括指定ができるところが多いが、とりあえず無視する。
+
+
+
+	// 枠線
+	svgg.drawGraphPaneFrame( "black");
+
+
+	// TODO: フォントサイズを自動調節する？
+
+	// SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
+	// （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
+	// svgタグのサイズとviewBoxのサイズを合わせたい。
+	
+	// ここを書いていく。
+
+	
+	return svgg;
+
+
+
+
+}
+
+
