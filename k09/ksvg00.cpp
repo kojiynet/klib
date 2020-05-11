@@ -41,6 +41,7 @@ class SvgGraph;
 class GraphAddable;
 class GraphBasicShape;
 class GraphRect;
+class GraphLine;
 
 class GraphRectAnimator;
 class BuildupGraphRectAnimator;
@@ -439,6 +440,65 @@ public:
 	std::string getContent( const Cambus &cam) const;
 
 	void addAnimateBuildup( double);
+
+};
+
+// 論理座標系で指定する。
+class GraphLine : public GraphBasicShape, public GraphAddable {
+
+private:
+
+	double x1;
+	double y1;
+	double x2;
+	double y2;
+
+// ↓あとで
+//	std::vector < std::unique_ptr <GraphLineAnimator> > animatorpvec;
+
+public:
+
+	GraphLine( double xa, double ya, double xb, double yb);
+	~GraphLine( void);
+
+// ↓アニメーションを入れるときにつくる。
+//	double getX1( void) const;
+//	double getY1( void) const;
+//	double getX2( void) const;
+//	double getY2( void) const;
+
+	std::string getContent( const Cambus &cam) const;
+
+//	void addAnimateOpacity( double); // 透過度をゼロからMAXに？
+
+};
+
+// 論理座標系で指定する。
+// ただしドット専用。
+class GraphDot : public GraphBasicShape, public GraphAddable {
+
+private:
+
+	double cx;
+	double cy;
+	double size; // これだけは実際の座標系での大きさ（半径）
+
+// ↓あとで
+//	std::vector < std::unique_ptr <GraphCircleAnimator> > animatorpvec;
+
+public:
+
+	GraphDot( double cx0, double cy0, double size0);
+	~GraphDot( void);
+
+// ↓アニメーションを入れるときにつくる。
+//	double getCx( void) const;
+//	double getCy( void) const;
+//	double getR( void) const;
+
+	std::string getContent( const Cambus &cam) const;
+
+//	void addAnimateDelay( double); // ある秒数から出現？
 
 };
 
@@ -1106,17 +1166,15 @@ drawXGridLines(
 )
 {
 
+	double theoy_top = cam.theoYMax;
+	double theoy_bottom = cam.theoYMin;
+
 	for ( auto v : xgridpoints){
 
-		Point theoP1( v, cam.theoYMax); // top
-		Point theoP2( v, cam.theoYMin); // bottom 
-		Point actuP1 = cam.getActualFromTheoretical( theoP1);
-		Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-		SvgLine li( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
-		li.addStroke( linecolor);
-		li.addStrokewidth( 1);
-		addLineActu( li);
+		GraphLine li( v, theoy_top, v, theoy_bottom);
+		li.setStroke( linecolor);
+		li.setStrokewidth( 1);
+		addElement( li); 
 
 	}
 
@@ -1131,17 +1189,15 @@ drawYGridLines(
 )
 {
 
+	double theox_left = cam.theoXMin;
+	double theox_right = cam.theoXMax;
+
 	for ( auto v : ygridpoints){
 
-		Point theoP1( cam.theoXMin, v); // left
-		Point theoP2( cam.theoXMax, v); // right 
-		Point actuP1 = cam.getActualFromTheoretical( theoP1);
-		Point actuP2 = cam.getActualFromTheoretical( theoP2);
-
-		SvgLine li( actuP1.x, actuP1.y, actuP2.x, actuP2.y);
-		li.addStroke( linecolor);
-		li.addStrokewidth( 1);
-		addLineActu( li);;
+		GraphLine li( theox_left, v, theox_right, v);
+		li.setStroke( linecolor);
+		li.setStrokewidth( 1);
+		addElement( li); 
 
 	}
 
@@ -1195,13 +1251,10 @@ drawPoints(
 
 	for ( int i = 0; i < n; i++){
 
-		Point theoP( xvec[ i], yvec[ i]); 
-		Point actuP = cam.getActualFromTheoretical( theoP);
-
-		SvgCircle ci( actuP.x, actuP.y, 1);
-		ci.addFill( color);
-		ci.addStroke( color);
-		svgf.addElement( ci);
+		GraphDot dot( xvec[ i], yvec[ i], 1);
+		dot.setFill( color);
+		dot.setStroke( color);
+		addElement( dot);
 
 	}
 
@@ -1564,7 +1617,7 @@ setFillopacity( double v0)
 }
 
 
-/* ***** class SvgRect ***** */
+/* ***** class GraphRect ***** */
 
 GraphRect :: 
 GraphRect( double x0, double y0, double w0, double h0)
@@ -1648,33 +1701,6 @@ const
 
 	return ss.str();
 
-
-/*
-	if ( animatevec.size() < 1){
-	
-		ret = "<rect";
-		for ( const auto &attr : attrvec){
-			ret += " ";
-			ret += attr;
-		}
-		ret += " />";
-	
-	} else {
-	
-		ret = "<rect";
-		for ( const auto &attr : attrvec){
-			ret += " ";
-			ret += attr;
-		}
-		ret += " >";
-		for ( const auto &animatetag : animatevec){
-			ret += animatetag;
-		}
-		ret += "</rect>";
-	
-	}
-*/
-
 }
 
 // 長方形が下から伸びてくるアニメーションを追加する。
@@ -1687,6 +1713,110 @@ addAnimateBuildup( double sec)
 	// インスタンスをつくってunique_ptrにして、それをvectorに追加。
 	animatorpvec.push_back( std::make_unique <BuildupGraphRectAnimator> ( sec));
 	
+}
+
+
+/* ***** class GraphLine ***** */
+
+GraphLine :: 
+GraphLine( double xa, double ya, double xb, double yb)
+: GraphBasicShape(), x1( xa), y1( ya), x2( xb), y2( yb) // , animatorpvec()
+{}
+
+GraphLine :: 
+~GraphLine( void)
+{}
+
+std::string 
+GraphLine :: 
+getContent( const Cambus &cam) 
+const
+{
+
+	double actux1 = cam.getXActualFromTheoretical( x1);
+	double actuy1 = cam.getYActualFromTheoretical( y1);
+	double actux2 = cam.getXActualFromTheoretical( x2);
+	double actuy2 = cam.getYActualFromTheoretical( y2);
+
+	std::stringstream ss;
+
+	ss << "<line" << " ";
+
+	ss <<
+		R"(x1=")" << actux1 << R"(")" << " " << 
+		R"(y1=")" << actuy1 << R"(")" << " " << 
+		R"(x2=")" << actux2 << R"(")" << " " << 
+		R"(y2=")" << actuy2 << R"(")" << " ";
+	
+	ss << getBasicShapeAttr() << ">";
+
+// ↓まだ。
+//	int animatorlen = animatorpvec.size();
+//	if ( animatorlen > 0){
+//
+//		ss << std::endl;
+//
+//		for ( int i = 0; i < animatorlen; i++){
+//			ss << animatorpvec[ i]->getContent( *this, cam);
+//			ss << std::endl;
+//		}
+//
+//	}
+
+	ss << "</line>";
+
+	return ss.str();
+
+}
+
+/* ***** class GraphDot ***** */
+
+GraphDot :: 
+GraphDot( double cx0, double cy0, double size0)
+: GraphBasicShape(), cx( cx0), cy( cy0), size( size0) // , animatorpvec()
+{}
+
+GraphDot :: 
+~GraphDot( void)
+{}
+
+std::string 
+GraphDot :: 
+getContent( const Cambus &cam) 
+const
+{
+
+	double actux = cam.getXActualFromTheoretical( cx);
+	double actuy = cam.getYActualFromTheoretical( cy);
+
+	std::stringstream ss;
+
+	ss << "<circle" << " ";
+
+	ss <<
+		R"(cx=")" << actux << R"(")" << " " << 
+		R"(cy=")" << actuy << R"(")" << " " << 
+		R"(r=")"  << size << R"(")" << " ";
+	
+	ss << getBasicShapeAttr() << ">";
+
+// ↓まだ。
+//	int animatorlen = animatorpvec.size();
+//	if ( animatorlen > 0){
+//
+//		ss << std::endl;
+//
+//		for ( int i = 0; i < animatorlen; i++){
+//			ss << animatorpvec[ i]->getContent( *this, cam);
+//			ss << std::endl;
+//		}
+//
+//	}
+
+	ss << "</circle>";
+
+	return ss.str();
+
 }
 
 
