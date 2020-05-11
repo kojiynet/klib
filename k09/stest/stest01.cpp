@@ -167,8 +167,7 @@ int main( int, char *[])
 
 	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
 	// （それを目的としていたのに忘れていた）
-	// →途中。SvgGraph::drawBins()のアニメで止まっている。
-	// →そのあと、GraphLineをつくってグリッド線をそれで描く。
+	// →GraphLineをつくってグリッド線をそれで描く。
 
 	// pclub06の内容を回収する。散布図と、円。
 	
