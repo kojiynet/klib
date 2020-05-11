@@ -29,6 +29,7 @@
 #include <k09/kstat02.cpp>
 #include <k09/koutputfile00.cpp>
 #include <k09/ksvg00.cpp>
+#include <k09/krand00.cpp>
 #include <iostream> 
 #include <iomanip>
 #include <algorithm>
@@ -50,6 +51,13 @@ using namespace std;
 /* ********** Function Declarations ********** */
 
 int main( int, char *[]);
+
+SvgGraph calculatePi( double);
+
+SvgGraph createScatterAndCircle(
+	const std::vector <double> &xvec,
+	const std::vector <double> &yvec
+);
 
 
 /* ********** Class Definitions ********** */
@@ -164,12 +172,17 @@ int main( int, char *[])
 		svgg.writeFile( "stest01out02.svg");
 	}
 
+	{
+		SvgGraph svgg = calculatePi( 4000);
+		svgg.writeFile( "stest01out03.svg");
+	}
+
+	// pclub06の内容を回収しつつ。
 
 	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
 	// （それを目的としていたのに忘れていた）
-	// →GraphLineをつくってグリッド線をそれで描く。
+	// 散布図用の、赤い楕円。
 
-	// pclub06の内容を回収する。散布図と、円。
 	
 
 
@@ -252,6 +265,150 @@ int main( int, char *[])
 	}
 */
 }
+
+SvgGraph calculatePi( double n)
+{
+
+	std::vector <double> xvec;
+	std::vector <double> yvec;
+	xvec.reserve( n);
+	yvec.reserve( n);
+
+	for ( int i = 0; i < n; i++) {
+    	xvec.push_back( randomUniform( -1.0, 1.0));
+    	yvec.push_back( randomUniform( -1.0, 1.0));
+	}	
+
+	int ninside = 0;
+	for ( int i = 0; i < n; i++){
+		if ( xvec[ i] * xvec[ i] + yvec[ i] * yvec[ i] < 1.0){
+			ninside++;
+		}
+	}
+	std::cout << "N of Draws: " << n << std::endl;
+	std::cout << "Estimated PI: " << ( ( double)ninside / n ) * 4.0 << std::endl << std::endl;	
+
+	SvgGraph svgg = createScatterAndCircle( xvec, yvec);
+	
+	return svgg;
+	
+}
+
+SvgGraph createScatterAndCircle(
+	const std::vector <double> &xvec,
+	const std::vector <double> &yvec
+)
+{
+
+	std::string graph_title = "Random Numbers and Circle";
+	std::string xaxis_title = "x";
+	std::string yaxis_title = "y";
+
+	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
+	double svgwidth = 500;
+	double svgheight = 500;
+	double outermargin = 20;
+	double graph_title_fontsize = 20;
+	double graph_title_margin = 10; // グラフタ\イトルの下のマージン
+	double axis_title_fontsize = 20;
+	double axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
+	double axis_label_fontsize = 14;
+	double axis_ticklength = 5;
+
+	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
+
+	// グラフ描画領域の座標（左上、右下）
+	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
+	double graphpane_actuX2 = svgwidth - outermargin; 
+	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
+
+	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
+	double graphheight = graphpane_actuY2 - graphpane_actuY1;
+
+	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
+
+	// x軸
+	double xminval = *( min_element( xvec.begin(), xvec.end()));
+	double xmaxval = *( max_element( xvec.begin(), xvec.end()));
+	std::vector <double> xgridpoints = getGridPoints( xminval, xmaxval);
+
+	// y軸
+	double yminval = *( min_element( yvec.begin(), yvec.end()));
+	double ymaxval = *( max_element( yvec.begin(), yvec.end()));
+	std::vector <double> ygridpoints = getGridPoints( yminval, ymaxval);
+
+	// 描画範囲は、Gridpointsのさらに5%外側にする。
+	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
+	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
+	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
+	
+	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
+	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
+	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
+
+	// SvgGraphインスタンス内のキャンバスの設定
+	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
+	// 　　「即時に」座標変換がなされる。
+	// 　　あとでCambusオブジェクトを入れ替えてもそれまでに追加された描画部品には影響しない。
+
+	Cambus cam;
+	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
+	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
+	svgg.setCambus( cam);
+
+
+	// 背景の描画開始
+
+	svgg.setBackground( "whitesmoke");
+
+	svgg.setGraphPaneColor( "gainsboro");
+
+	svgg.drawXGridLines( xgridpoints, "silver");
+	svgg.drawYGridLines( ygridpoints, "silver");
+
+	// 背景の描画終了
+
+
+
+	// メインの情報の描画終了
+
+	svgg.drawPoints( xvec, yvec, "gray");
+
+	svgg.drawCircle( 0, 0, 1, "red");
+
+	// メインの情報の描画終了
+
+
+	// 周辺情報記載の開始
+
+	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
+	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
+
+	// 目盛ラベルの数値の桁数はどうなるのか。。
+
+	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
+	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+
+	svgg.setGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
+	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
+
+	svgg.setXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	svgg.setYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	
+	// 周辺情報記載の終了
+
+
+	// 枠線
+	svgg.drawGraphPaneFrame( "black");
+	
+
+	return svgg;
+
+}
+
+
 
 
 /* ********** Definitions of Member Functions ********** */
