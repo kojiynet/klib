@@ -42,6 +42,9 @@ class GraphAddable;
 class GraphBasicShape;
 class GraphRect;
 
+class GraphRectAnimator;
+class BuildupGraphRectAnimator;
+
 class SvgHistogramMaker;
 
 
@@ -421,17 +424,46 @@ private:
 	double w;
 	double h;
 
+	std::vector < std::unique_ptr <GraphRectAnimator> > animatorpvec;
+
 public:
 
 	GraphRect( double x0, double y0, double w0, double h0);
 	~GraphRect( void);
 
-// やり方考え中。
-// ファンクタ的なもので、アニメーションを示すタグを出力する？
-// この際、ファンクタに、camの参照と、GraphRect自身の参照を渡す？
-//	void addAnimateBuildup( double v1, double v2, double sec);
+	double getX( void) const;
+	double getY( void) const;
+	double getW( void) const;
+	double getH( void) const;
 
 	std::string getContent( const Cambus &cam) const;
+
+	void addAnimateBuildup( double);
+
+};
+
+// interface for animators of SvgGraph elements 
+class GraphRectAnimator {
+public:
+	virtual std::string getContent(
+		const GraphRect &, const Cambus &
+	) const = 0;
+};
+
+// 長方形が下から伸びてくるアニメーション
+class BuildupGraphRectAnimator : public GraphRectAnimator {
+
+private:
+
+	double sec;
+
+public:
+
+	BuildupGraphRectAnimator( void) = delete;
+	BuildupGraphRectAnimator( double);
+	~BuildupGraphRectAnimator( void);
+	
+	std::string getContent( const GraphRect &, const Cambus &) const;
 
 };
 
@@ -996,7 +1028,7 @@ getContent( void) const
 
 /* ***** class SvgGraph ***** */
 
-// Cambusの座標系を定める。
+// GraphPaneの座標系を示すCambusを設定する。
 void 
 SvgGraph :: 
 setCambus( const Cambus &c0)
@@ -1116,6 +1148,7 @@ drawYGridLines(
 }
 
 // 度数を示すバーを描く。
+// animted = trueのとき、下から1秒間で伸びてくるアニメーションが加わる。
 // 注：これを目盛グリッド線よりもあとに描くべし。グリッド線を「上書き」してほしいから。
 void 
 SvgGraph :: 
@@ -1124,39 +1157,21 @@ drawBins(
 	const std::vector <double> &rightvec, 
 	const std::vector <int>    &counts, 
 	const std::string          &color,
-	bool animated /* = false */
+	bool animated // = false 
 )
 {
 
 	for ( int i = 0; i < counts.size(); i++){
 
-		Point theoP1( leftvec[ i], counts[ i]); // left-top
-		Point theoP2( rightvec[ i], 0); // right-bottom 
-		Point actuP1 = cam.getActualFromTheoretical( theoP1);
-		Point actuP2 = cam.getActualFromTheoretical( theoP2);
+		GraphRect rect( leftvec[ i], 0, rightvec[ i] - leftvec[ i], counts[ i]);
+		rect.setFill( color);
+		rect.setStroke( color);
 
-		if ( animated == true ){
-
-			// GraphRect.addAnimateBuildup()のようなものを書きたい。
-
-			double rect_height = actuP2.y - actuP1.y;
-			SvgRect rect( actuP1.x, actuP1.y, actuP2.x - actuP1.x, rect_height); 
-			rect.addFill( color);
-			rect.addStroke( color);
-
-			rect.addAnimate( "height", 0, rect_height, 1);
-			rect.addAnimate( "y", actuP2.y, actuP1.y, 1);
-
-			svgf.addElement( rect);
-
-		} else {
-
-			GraphRect rect( leftvec[ i], 0, rightvec[ i] - leftvec[ i], counts[ i]);
-			rect.setFill( color);
-			rect.setStroke( color);
-			addElement( rect); 
-
+		if ( animated == true){
+			rect.addAnimateBuildup( 1);
 		}
+
+		addElement( rect); 
 
 	}
 
@@ -1553,12 +1568,44 @@ setFillopacity( double v0)
 
 GraphRect :: 
 GraphRect( double x0, double y0, double w0, double h0)
-: GraphBasicShape(), x( x0), y( y0), w( w0), h( h0)
+: GraphBasicShape(), x( x0), y( y0), w( w0), h( h0), animatorpvec()
 {}
 
 GraphRect :: 
 ~GraphRect( void)
 {}
+
+double 
+GraphRect :: 
+getX( void)
+const
+{
+	return x;
+}
+
+double 
+GraphRect :: 
+getY( void)
+const
+{
+	return y;
+}
+
+double 
+GraphRect :: 
+getW( void)
+const
+{
+	return w;
+}
+
+double 
+GraphRect :: 
+getH( void)
+const
+{
+	return h;
+}
 
 std::string 
 GraphRect :: 
@@ -1584,6 +1631,18 @@ const
 		R"(height=")" << actuh << R"(")" << " ";
 	
 	ss << getBasicShapeAttr() << ">";
+
+	int animatorlen = animatorpvec.size();
+	if ( animatorlen > 0){
+
+		ss << std::endl;
+
+		for ( int i = 0; i < animatorlen; i++){
+			ss << animatorpvec[ i]->getContent( *this, cam);
+			ss << std::endl;
+		}
+
+	}
 
 	ss << "</rect>";
 
@@ -1615,6 +1674,78 @@ const
 	
 	}
 */
+
+}
+
+// 長方形が下から伸びてくるアニメーションを追加する。
+void
+GraphRect :: 
+addAnimateBuildup( double sec)
+{
+
+	// BuildupGraphRectAnimatorのコンストラクタを呼び、
+	// インスタンスをつくってunique_ptrにして、それをvectorに追加。
+	animatorpvec.push_back( std::make_unique <BuildupGraphRectAnimator> ( sec));
+	
+}
+
+
+/* ***** class BuildupGraphRectAnimator ***** */
+
+BuildupGraphRectAnimator ::
+BuildupGraphRectAnimator( double s0)
+: sec( s0)
+{}
+
+BuildupGraphRectAnimator ::
+~BuildupGraphRectAnimator( void)
+{}
+
+std::string 
+BuildupGraphRectAnimator :: 
+getContent( const GraphRect &rect, const Cambus &cam)
+const
+{
+
+	double x = rect.getX();
+	double y = rect.getY();
+	double w = rect.getW();
+	double h = rect.getH();
+
+	// below are "actual" coordinate points
+	double leftx = cam.getXActualFromTheoretical( x);
+	double rightx = cam.getXActualFromTheoretical( x + w);
+	double bottomy = cam.getYActualFromTheoretical( y);
+	double topy = cam.getYActualFromTheoretical( y + h);
+
+	double actuy_start = bottomy;
+	double actuy_end = topy;
+
+	double actuh_start = 0;
+	double actuh_end = bottomy - topy;
+
+	std::stringstream ss;
+	ss << "<animate " <<
+		"attributeName=\"y\"" << " " << 
+		"begin=\"0s\"" << " " <<
+		"dur=\"" << sec << "\"" << " " << 
+		"from=\"" << actuy_start << "\"" << " " <<
+		"to=\"" << actuy_end << "\"" << " " <<
+		"repeatCount=\"1\"" <<
+	"/>";
+
+	ss << std::endl;
+	
+	ss << "<animate " << 
+		"attributeName=\"height\"" << " " << 
+		"begin=\"0s\"" << " " <<
+		"dur=\"" << sec << "\"" << " " << 
+		"from=\"" << actuh_start << "\"" << " " <<
+		"to=\"" << actuh_end << "\"" << " " <<
+		"repeatCount=\"1\"" <<
+	"/>";
+
+	return ss.str();
 
 }
 
