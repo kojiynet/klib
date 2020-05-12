@@ -42,9 +42,13 @@ class GraphAddable;
 class GraphBasicShape;
 class GraphRect;
 class GraphLine;
+class GraphDot; 
+class GraphEllipse; 
 
 class GraphRectAnimator;
 class BuildupGraphRectAnimator;
+
+class SvgGraphMaker;
 
 class SvgHistogramMaker;
 
@@ -95,6 +99,12 @@ struct Cambus {
 	{
 		actuXMin = xmin0; actuYMin = ymin0; actuXMax = xmax0; actuYMax = ymax0; 
 		actuWidth = xmax0 - xmin0; actuHeight = ymax0 - ymin0; 
+	}
+
+	Cambus( void)
+	{
+		setTheoretical( 0, 0, 1, 1);
+		setActual( 100, 100, 400, 400);
 	}
 
 	// 論理座標系表現から実際の座標系表現を作成。
@@ -305,10 +315,15 @@ public:
 	SvgGraph(
 		double w0, double h0, double x1, double y1, double x2, double y2
 	)
-	 : svgf( w0, h0, x1, y1, x2, y2), svgwidth( w0), svgheight( h0)
+	 : svgf( w0, h0, x1, y1, x2, y2), cam(), svgwidth( w0), svgheight( h0)
 	{}
 
 	void setCambus( const Cambus &);
+
+	void addElement( const GraphAddable &);
+	
+	void addRectActu( const SvgRect &); 
+	void addLineActu( const SvgLine &); 
 
 	void setBackground( const std::string &);
 
@@ -339,9 +354,10 @@ public:
 		const std::string &
 	);
 
-	void drawCircle(
+	void drawEllipse(
 		double,
 		double, 
+		double,
 		double,
 		const std::string &
 	);
@@ -375,11 +391,6 @@ public:
 	);
 
 	void drawGraphPaneFrame( const std::string);
-
-	void addElement( const GraphAddable &);
-	
-	void addRectActu( const SvgRect &); 
-	void addLineActu( const SvgLine &); 
 
 	bool writeFile( const std::string &);
 
@@ -502,6 +513,27 @@ public:
 
 };
 
+
+// 論理座標系で指定する。
+class GraphEllipse : public GraphBasicShape, public GraphAddable {
+
+private:
+
+	double cx;
+	double cy;
+	double rx; // x軸方向の半径
+	double ry; // y軸方向の半径
+
+public:
+
+	GraphEllipse( double cx0, double cy0, double rx0, double ry0);
+	~GraphEllipse( void);
+
+	std::string getContent( const Cambus &cam) const;
+
+};
+
+
 // interface for animators of SvgGraph elements 
 class GraphRectAnimator {
 public:
@@ -509,6 +541,7 @@ public:
 		const GraphRect &, const Cambus &
 	) const = 0;
 };
+
 
 // 長方形が下から伸びてくるアニメーション
 class BuildupGraphRectAnimator : public GraphRectAnimator {
@@ -526,6 +559,7 @@ public:
 	std::string getContent( const GraphRect &, const Cambus &) const;
 
 };
+
 
 class SvgHistogramMaker {
 
@@ -1096,6 +1130,31 @@ setCambus( const Cambus &c0)
 	cam = c0;
 }
 
+// 要素オブジェクトを追加。
+// elem内でcamを使って座標変換することになる。
+void 
+SvgGraph :: 
+addElement( const GraphAddable &elem)
+{
+	svgf.addFileContent( elem.getContent( cam));
+}
+
+// 座標変換せずに描画
+void 
+SvgGraph :: 
+addRectActu( const SvgRect &r0)
+{
+	svgf.addElement( r0);
+}
+
+// 座標変換せずに描画
+void 
+SvgGraph :: 
+addLineActu( const SvgLine &l0)
+{
+	svgf.addElement( l0);
+}
+
 // SVG全体の背景色を設定
 void 
 SvgGraph :: 
@@ -1260,18 +1319,23 @@ drawPoints(
 
 }
 
-// 円を描く。
+// 楕円を描く。
+// rx==ryのとき、（論理座標では）真円になる。
 // 注：これを目盛グリッド線よりもあとに描くべし。グリッド線を「上書き」してほしいから。
 void 
 SvgGraph :: 
-drawCircle(
-	double cx, double cy, double r,
+drawEllipse(
+	double cx, double cy, double rx, double ry,
 	const std::string &color
 )
 {
 
-	// 縦方向と横方向の縮尺が違う場合に備えて、楕円を利用する。
+	GraphEllipse el( cx, cy, rx, ry);
+	el.setFill( "none");
+	el.setStroke( color);
+	addElement( el);
 
+/*
 	Point theoP1( cx, cy); 
 	Point theoP2( cx+r, cy); 
 	Point theoP3( cx, cy+r); 
@@ -1286,7 +1350,7 @@ drawCircle(
 	el.addFill( "none");
 	el.addStroke( color);
 	svgf.addElement( el);
-
+*/
 }
 
 // x軸の目盛のヒゲを描く。
@@ -1504,31 +1568,6 @@ drawGraphPaneFrame(
 	r.addStroke( color);
 	r.addStrokewidth( 1);
 	svgf.addElement( r);
-}
-
-// 要素オブジェクトを追加。
-// elem内でcamを使って座標変換することになる。
-void 
-SvgGraph :: 
-addElement( const GraphAddable &elem)
-{
-	svgf.addFileContent( elem.getContent( cam));
-}
-
-// 座標変換せずに描画
-void 
-SvgGraph :: 
-addRectActu( const SvgRect &r0)
-{
-	svgf.addElement( r0);
-}
-
-// 座標変換せずに描画
-void 
-SvgGraph :: 
-addLineActu( const SvgLine &l0)
-{
-	svgf.addElement( l0);
 }
 
 // ファイルに書き出すメソッド
@@ -1820,6 +1859,51 @@ const
 }
 
 
+/* ***** class GraphEllipse ***** */
+
+GraphEllipse :: 
+GraphEllipse( double cx0, double cy0, double rx0, double ry0)
+: GraphBasicShape(), cx( cx0), cy( cy0), rx( rx0), ry( ry0)
+{}
+
+GraphEllipse :: 
+~GraphEllipse( void)
+{}
+
+std::string 
+GraphEllipse :: 
+getContent( const Cambus &cam) 
+const
+{
+
+	double actucx = cam.getXActualFromTheoretical( cx);
+	double actucy = cam.getYActualFromTheoretical( cy);
+
+	double actucx2 = cam.getXActualFromTheoretical( cx + rx);
+	double acturx = actucx2 - actucx;
+
+	double actucy2 = cam.getYActualFromTheoretical( cy - ry);
+	double actury = actucy2 - actucy;
+
+	std::stringstream ss;
+
+	ss << "<ellipse" << " ";
+
+	ss <<
+		R"(cx=")" << actucx << R"(")" << " " << 
+		R"(cy=")" << actucy << R"(")" << " " << 
+		R"(rx=")" << acturx << R"(")" << " " << 
+		R"(ry=")" << actury << R"(")" << " ";
+	
+	ss << getBasicShapeAttr() << ">";
+
+	ss << "</ellipse>";
+
+	return ss.str();
+
+}
+
+
 /* ***** class BuildupGraphRectAnimator ***** */
 
 BuildupGraphRectAnimator ::
@@ -1855,24 +1939,25 @@ const
 	double actuh_end = bottomy - topy;
 
 	std::stringstream ss;
+
 	ss << "<animate " <<
-		"attributeName=\"y\"" << " " << 
-		"begin=\"0s\"" << " " <<
-		"dur=\"" << sec << "\"" << " " << 
-		"from=\"" << actuy_start << "\"" << " " <<
-		"to=\"" << actuy_end << "\"" << " " <<
-		"repeatCount=\"1\"" <<
+		R"(attributeName=")" << "y"         << R"(")" << " " << 
+		R"(begin=")"         << "0s"        << R"(")" << " " << 
+		R"(dur=")"           << sec         << R"(")" << " " << 
+		R"(from=")"          << actuy_start << R"(")" << " " << 
+		R"(to=")"            << actuy_end   << R"(")" << " " << 
+		R"(repeatCount=")"   << "1"         << R"(")" << " " << 
 	"/>";
 
 	ss << std::endl;
-	
-	ss << "<animate " << 
-		"attributeName=\"height\"" << " " << 
-		"begin=\"0s\"" << " " <<
-		"dur=\"" << sec << "\"" << " " << 
-		"from=\"" << actuh_start << "\"" << " " <<
-		"to=\"" << actuh_end << "\"" << " " <<
-		"repeatCount=\"1\"" <<
+
+	ss << "<animate " <<
+		R"(attributeName=")" << "height"    << R"(")" << " " << 
+		R"(begin=")"         << "0s"        << R"(")" << " " << 
+		R"(dur=")"           << sec         << R"(")" << " " << 
+		R"(from=")"          << actuh_start << R"(")" << " " << 
+		R"(to=")"            << actuh_end   << R"(")" << " " << 
+		R"(repeatCount=")"   << "1"         << R"(")" << " " << 
 	"/>";
 
 	return ss.str();
@@ -1997,7 +2082,7 @@ createGraph( void)
 
 	// 背景の描画終了
 
-
+/*
 	// 描画領域への描画開始
 
 	svgg.startDrawingGraphPane();
@@ -2014,7 +2099,7 @@ createGraph( void)
 	svgg.endDrawingGraphPane();
 
 	// 描画領域への描画終了
-
+*/
 
 	// 周辺情報記載の開始
 
@@ -2056,9 +2141,26 @@ createGraph( void)
 	// （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
 	// svgタグのサイズとviewBoxのサイズを合わせたい。
 	
-	// ここを書いていく。
 
-	
+
+	// 描画領域への描画開始
+
+	svgg.startDrawingGraphPane();
+
+	svgg.drawXGridLines( xgridpoints, "silver");
+	svgg.drawYGridLines( ygridpoints, "silver");
+
+	if ( animated == true){
+		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
+	} else {
+		svgg.drawBins( leftvec, rightvec, counts, "gray");
+	}
+
+	svgg.endDrawingGraphPane();
+
+	// 描画領域への描画終了
+
+
 	return svgg;
 
 
