@@ -176,13 +176,15 @@ int main( int, char *[])
 		SvgGraph svgg = calculatePi( 4000);
 		svgg.writeFile( "stest01out03.svg");
 	}
+	
+	// pclub06の内容を回収しつつ。↓
 
-	// pclub06の内容を回収しつつ。
+	// SvgHistogramでのcreateGraphのうち、Histogram以外に使えるものを
+	// 分離して、SvgGraphに預ける。
+	// setDefaultsでセットされるメンバも。
+	// SvgHistogramでやるべきなのは、グリッド線の間隔の計算と、Barの描画。
 
-	// SvgGraphの中で、GraphPane内の座標を自動変換できるように。。
-	// （それを目的としていたのに忘れていた）
-	// 散布図用の、赤い楕円。
-
+	// その後、散布図でも同様に。
 	
 
 
@@ -371,15 +373,6 @@ SvgGraph createScatterAndCircle(
 
 
 
-	// メインの情報の描画終了
-
-	svgg.drawPoints( xvec, yvec, "gray");
-
-	svgg.drawCircle( 0, 0, 1, "red");
-
-	// メインの情報の描画終了
-
-
 	// 周辺情報記載の開始
 
 	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
@@ -402,7 +395,19 @@ SvgGraph createScatterAndCircle(
 
 	// 枠線
 	svgg.drawGraphPaneFrame( "black");
-	
+
+
+
+
+	// メインの情報の描画終了
+
+	svgg.drawPoints( xvec, yvec, "gray");
+
+	svgg.drawEllipse( 0, 0, 1, 1, "red");
+
+	// メインの情報の描画終了
+
+
 
 	return svgg;
 
