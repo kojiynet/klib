@@ -48,8 +48,6 @@ class GraphEllipse;
 class GraphRectAnimator;
 class BuildupGraphRectAnimator;
 
-class SvgGraphMaker;
-
 class SvgHistogramMaker;
 
 
@@ -308,26 +306,49 @@ private:
 	double svgwidth;  // width of the whole SVG
 	double svgheight; // height of the whole SVG
 
+	std::vector <double> xgridpoints;
+	std::vector <double> ygridpoints;
+
+	double outermargin;
+	double graph_title_fontsize;
+	double graph_title_margin; // グラフタイトルの下のマージン
+	double axis_title_fontsize; 
+	double axis_title_margin; // 軸タイトルと軸ラベルの間のマージン
+	double axis_label_fontsize; 
+	double axis_ticklength;
+
+	std::string graph_title;
+	std::string xaxis_title;
+	std::string yaxis_title;
+
 public:
 
 	SvgGraph( void) = delete; 
 
 	SvgGraph(
 		double w0, double h0, double x1, double y1, double x2, double y2
-	)
-	 : svgf( w0, h0, x1, y1, x2, y2), cam(), svgwidth( w0), svgheight( h0)
-	{}
+	);
+
+	~SvgGraph( void);
+
+	void setDefault( void);
 
 	void setCambus( const Cambus &);
+	void setXGridPoints( const std::vector <double> &);
+	void setYGridPoints( const std::vector <double> &);
+	void setGraphTitle( const std::string &);
+	void setXAxisTitle( const std::string &);
+	void setYAxisTitle( const std::string &);
+	void prepareGraph( void);
 
 	void addElement( const GraphAddable &);
 	
 	void addRectActu( const SvgRect &); 
 	void addLineActu( const SvgLine &); 
 
-	void setBackground( const std::string &);
+	void addBackground( const std::string &);
 
-	void setGraphPaneColor( const std::string &);
+	void addGraphPaneColor( const std::string &);
 
 	void startDrawingGraphPane( void);
 	void endDrawingGraphPane( void);
@@ -362,35 +383,35 @@ public:
 		const std::string &
 	);
 
-	void drawXAxisTicks( 
+	void addXAxisTicks( 
 		const std::vector <double> &, double, const std::string &
 	);
 
-	void drawYAxisTicks( 
+	void addYAxisTicks( 
 		const std::vector <double> &, double, const std::string &
 	);
 
-	void setXAxisLabels(
+	void addXAxisLabels(
 		const std::vector <double> &, const std::string &, double, double, double
 	);
 
-	void setYAxisLabels(
+	void addYAxisLabels(
 		const std::vector <double> &, const std::string &, double, double, double
 	);
 
-	void setGraphTitle(
+	void addGraphTitle(
 		const std::string &, const std::string &, double, double, double
 	);
 
-	void setXAxisTitle(
+	void addXAxisTitle(
 		const std::string &, const std::string &, double, double, double
 	);
 
-	void setYAxisTitle( 
+	void addYAxisTitle( 
 		const std::string &, const std::string &, double, double, double
 	);
 
-	void drawGraphPaneFrame( const std::string);
+	void addGraphPaneFrame( const std::string);
 
 	bool writeFile( const std::string &);
 
@@ -1122,12 +1143,127 @@ getContent( void) const
 
 /* ***** class SvgGraph ***** */
 
+SvgGraph :: 
+SvgGraph(
+	double w0, double h0, double x1, double y1, double x2, double y2
+)
+: svgf( w0, h0, x1, y1, x2, y2), cam(), svgwidth( w0), svgheight( h0),
+  xgridpoints(), ygridpoints()
+{
+	setDefault();
+}
+
+SvgGraph :: 
+~SvgGraph( void)
+{}
+
+void
+SvgGraph :: 
+setDefault( void)
+{
+
+	svgwidth = 500;
+	svgheight = 500;
+	outermargin = 20;
+	graph_title_fontsize = 20;
+	graph_title_margin = 10; // グラフタイトルの下のマージン
+	axis_title_fontsize = 20;
+	axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
+	axis_label_fontsize = 14;
+	axis_ticklength = 5;
+
+	graph_title = "(No Title)";
+	xaxis_title = "x (Not Labeled)";
+	yaxis_title = "y (Not Labeled)";
+
+}
+
 // GraphPaneの座標系を示すCambusを設定する。
 void 
 SvgGraph :: 
 setCambus( const Cambus &c0)
 {
 	cam = c0;
+}
+
+void
+SvgGraph :: 
+setXGridPoints( const std::vector <double> &vec0)
+{
+	xgridpoints = vec0;
+}
+
+void
+SvgGraph :: 
+setYGridPoints( const std::vector <double> &vec0)
+{
+	ygridpoints = vec0;
+}
+
+void
+SvgGraph :: 
+setGraphTitle( const std::string &s0)
+{
+	graph_title = s0;
+}
+
+void
+SvgGraph :: 
+setXAxisTitle( const std::string &s0)
+{
+	xaxis_title = s0;
+}
+
+void
+SvgGraph :: 
+setYAxisTitle( const std::string &s0)
+{
+	yaxis_title = s0;
+}
+
+void
+SvgGraph ::  
+prepareGraph( void)
+{
+
+	// 背景の描画開始
+	addBackground( "whitesmoke");
+	addGraphPaneColor( "gainsboro");
+	// 背景の描画終了
+
+	// 周辺情報記載の開始
+	addXAxisTicks( xgridpoints, axis_ticklength, "black");
+	addXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
+	// 目盛ラベルの数値の桁数はどうなるのか。。
+	addYAxisTicks( ygridpoints, axis_ticklength, "black");
+	addYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	addGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
+	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
+	addXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	addYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	drawXGridLines( xgridpoints, "silver");
+	drawYGridLines( ygridpoints, "silver");
+	// 周辺情報記載の終了
+
+	// 枠線
+	addGraphPaneFrame( "black");
+
+	// TODO:
+	//   軸の単位の記載→優先順位は低い。
+	//   以上、<g>での一括指定ができるところが多いが、とりあえず無視する。
+	//   フォントサイズを自動調節する？
+
+	// Memo: 
+	//   SVGアニメをパワポに貼っても動かないらしい。
+	//   textタグで、IEやWordはdominant-baselineが効かないらしい。
+	//   （指定してもdominant-baseline="alphabetic"扱いになる。）
+	//   SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
+	//     （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
+	//     svgタグのサイズとviewBoxのサイズを合わせたい。
+	
+
+
 }
 
 // 要素オブジェクトを追加。
@@ -1158,7 +1294,7 @@ addLineActu( const SvgLine &l0)
 // SVG全体の背景色を設定
 void 
 SvgGraph :: 
-setBackground( const std::string &b0)
+addBackground( const std::string &b0)
 {
 	SvgRect r1( 0, 0, svgwidth, svgheight);
 	r1.addFill( b0);
@@ -1169,7 +1305,7 @@ setBackground( const std::string &b0)
 // graphpane = cambus の背景色を塗る。
 void 
 SvgGraph :: 
-setGraphPaneColor( const std::string &cambuscolor)
+addGraphPaneColor( const std::string &cambuscolor)
 {
 	
 	{
@@ -1356,7 +1492,7 @@ drawEllipse(
 // x軸の目盛のヒゲを描く。
 void 
 SvgGraph :: 
-drawXAxisTicks(
+addXAxisTicks(
 	const std::vector <double> &xgridpoints,
 	double ticklength,
 	const std::string &color
@@ -1384,7 +1520,7 @@ drawXAxisTicks(
 // y軸の目盛のヒゲを描く。
 void 
 SvgGraph :: 
-drawYAxisTicks(
+addYAxisTicks(
 	const std::vector <double> &ygridpoints,
 	double ticklength,
 	const std::string &color
@@ -1412,7 +1548,7 @@ drawYAxisTicks(
 // x軸の目盛のラベルを描く。
 void 
 SvgGraph :: 
-setXAxisLabels(
+addXAxisLabels(
 	const std::vector <double> &xgridpoints, 
 	const std::string &fontface,
 	double fontbase, // alphabetic基線の下端からのズレ（割合）
@@ -1448,7 +1584,7 @@ setXAxisLabels(
 // y軸の目盛のラベルを描く。
 void 
 SvgGraph ::
-setYAxisLabels(
+addYAxisLabels(
 	const std::vector <double> &ygridpoints, 
 	const std::string &fontface,
 	double fontbase, // alphabetic基線の下端からのズレ（割合）
@@ -1484,7 +1620,7 @@ setYAxisLabels(
 // グラフタイトルを表示
 void 
 SvgGraph :: 
-setGraphTitle(
+addGraphTitle(
 	const std::string &title,
 	const std::string &fontface,
 	double fontbase, // alphabetic基線の下端からのズレ（割合）
@@ -1508,7 +1644,7 @@ setGraphTitle(
 // x軸タイトルを表示
 void 
 SvgGraph :: 
-setXAxisTitle(
+addXAxisTitle(
 	const std::string &title,
 	const std::string &fontface,
 	double fontbase, // alphabetic基線の下端からのズレ（割合）
@@ -1532,7 +1668,7 @@ setXAxisTitle(
 // y軸タイトルを表示
 void 
 SvgGraph ::
-setYAxisTitle(
+addYAxisTitle(
 	const std::string &title,
 	const std::string &fontface,
 	double fontbase, // alphabetic基線の下端からのズレ（割合）
@@ -1559,7 +1695,7 @@ setYAxisTitle(
 // 　　fillは透過させる。
 void 
 SvgGraph :: 
-drawGraphPaneFrame(
+addGraphPaneFrame(
 	const std::string color
 )
 {
@@ -2063,6 +2199,8 @@ createGraph( void)
 	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
 	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
 	
+
+
 	// SvgGraphインスタンス内のキャンバスの設定
 	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
 	// 　　「即時に」座標変換がなされる。
@@ -2071,84 +2209,20 @@ createGraph( void)
 	Cambus cam;
 	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
 	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
+
 	svgg.setCambus( cam);
-
-
-	// 背景の描画開始
-
-	svgg.setBackground( "whitesmoke");
-
-	svgg.setGraphPaneColor( "gainsboro");
-
-	// 背景の描画終了
-
-/*
-	// 描画領域への描画開始
-
-	svgg.startDrawingGraphPane();
-
-	svgg.drawXGridLines( xgridpoints, "silver");
-	svgg.drawYGridLines( ygridpoints, "silver");
-
-	if ( animated == true){
-		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
-	} else {
-		svgg.drawBins( leftvec, rightvec, counts, "gray");
-	}
-
-	svgg.endDrawingGraphPane();
-
-	// 描画領域への描画終了
-*/
-
-	// 周辺情報記載の開始
-
-	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
-	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
-
-	// 目盛ラベルの数値の桁数はどうなるのか。。
-
-	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
-	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-
-	svgg.setGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
-	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
-
-	svgg.setXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	svgg.setYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	
-	// 周辺情報記載の終了
-
-	// TODO: 軸の単位の記載→優先順位は低い。
-
-	// SVGアニメをパワポに貼っても動かないらしい。
-
-	// textタグで、IEやWordはdominant-baselineが効かないらしい。
-	// （指定してもdominant-baseline="alphabetic"扱いになる。）
-
-	// 以上、<g>での一括指定ができるところが多いが、とりあえず無視する。
-
-
-
-	// 枠線
-	svgg.drawGraphPaneFrame( "black");
-
-
-	// TODO: フォントサイズを自動調節する？
-
-	// SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
-	// （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
-	// svgタグのサイズとviewBoxのサイズを合わせたい。
-	
+	svgg.setXGridPoints( xgridpoints);
+	svgg.setYGridPoints( ygridpoints);
+	svgg.setGraphTitle( graph_title);
+	svgg.setXAxisTitle( xaxis_title);
+	svgg.setYAxisTitle( yaxis_title);
+	svgg.prepareGraph();
 
 
 	// 描画領域への描画開始
 
 	svgg.startDrawingGraphPane();
 
-	svgg.drawXGridLines( xgridpoints, "silver");
-	svgg.drawYGridLines( ygridpoints, "silver");
 
 	if ( animated == true){
 		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
