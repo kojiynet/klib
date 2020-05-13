@@ -181,8 +181,9 @@ int main( int, char *[])
 
 	// SvgHistogramでのcreateGraphのうち、Histogram以外に使えるものを
 	// 分離して、SvgGraphに預ける。
-	// setDefaultsでセットされるメンバも。
-	// SvgHistogramでやるべきなのは、グリッド線の間隔の計算と、Barの描画。
+	// 描画範囲とGridPointsを、SvgGraphに自動でやらせる。
+
+	// SvgHistogramでやるべきなのは、Barの描画。
 
 	// その後、散布図でも同様に。
 	
@@ -362,9 +363,9 @@ SvgGraph createScatterAndCircle(
 
 	// 背景の描画開始
 
-	svgg.setBackground( "whitesmoke");
+	svgg.addBackground( "whitesmoke");
 
-	svgg.setGraphPaneColor( "gainsboro");
+	svgg.addGraphPaneColor( "gainsboro");
 
 	svgg.drawXGridLines( xgridpoints, "silver");
 	svgg.drawYGridLines( ygridpoints, "silver");
@@ -375,26 +376,26 @@ SvgGraph createScatterAndCircle(
 
 	// 周辺情報記載の開始
 
-	svgg.drawXAxisTicks( xgridpoints, axis_ticklength, "black");
-	svgg.setXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	svgg.addXAxisTicks( xgridpoints, axis_ticklength, "black");
+	svgg.addXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
 	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
 
 	// 目盛ラベルの数値の桁数はどうなるのか。。
 
-	svgg.drawYAxisTicks( ygridpoints, axis_ticklength, "black");
-	svgg.setYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	svgg.addYAxisTicks( ygridpoints, axis_ticklength, "black");
+	svgg.addYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
 
-	svgg.setGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
+	svgg.addGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
 	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
 
-	svgg.setXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	svgg.setYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	svgg.addXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	svgg.addYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
 	
 	// 周辺情報記載の終了
 
 
 	// 枠線
-	svgg.drawGraphPaneFrame( "black");
+	svgg.addGraphPaneFrame( "black");
 
 
 
