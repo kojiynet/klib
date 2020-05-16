@@ -6,8 +6,20 @@
 	
 	Written by Koji Yamamoto
 	Copyright (C) 2020 Koji Yamamoto
-	
-*/
+
+	TODO:
+	アニメーション実装でコメントアウトしているところを追加したい。
+	軸の単位の記載→優先順位は低い。
+	フォントサイズを自動調節
+
+	Memo: 
+	SVGアニメをパワポに貼っても動かないらしい。
+	textタグで、IEやWordはdominant-baselineが効かないらしい。
+	　（指定してもdominant-baseline="alphabetic"扱いになる。）
+	SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
+	　（強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
+	　svgタグのサイズとviewBoxのサイズを合わせたい。）
+*/	
 
 
 /* ********** Preprocessor Directives ********** */
@@ -48,7 +60,9 @@ class GraphEllipse;
 class GraphRectAnimator;
 class BuildupGraphRectAnimator;
 
+class SvgGraphMakerBase;
 class SvgHistogramMaker;
+class SvgScatterMaker;
 
 
 /* ********** Enum Definitions ********** */
@@ -306,9 +320,6 @@ private:
 	double svgwidth;  // width of the whole SVG
 	double svgheight; // height of the whole SVG
 
-	std::vector <double> xgridpoints;
-	std::vector <double> ygridpoints;
-
 	double outermargin;
 	double graph_title_fontsize;
 	double graph_title_margin; // グラフタイトルの下のマージン
@@ -321,6 +332,9 @@ private:
 	std::string xaxis_title;
 	std::string yaxis_title;
 
+	std::vector <double> xgridpoints;
+	std::vector <double> ygridpoints;
+
 public:
 
 	SvgGraph( void) = delete; 
@@ -332,10 +346,12 @@ public:
 	~SvgGraph( void);
 
 	void setDefault( void);
+	void setDefaultCambusAndGridpoints( double, double, double, double);
 
 	void setCambus( const Cambus &);
 	void setXGridPoints( const std::vector <double> &);
 	void setYGridPoints( const std::vector <double> &);
+
 	void setGraphTitle( const std::string &);
 	void setXAxisTitle( const std::string &);
 	void setYAxisTitle( const std::string &);
@@ -345,6 +361,7 @@ public:
 	
 	void addRectActu( const SvgRect &); 
 	void addLineActu( const SvgLine &); 
+	void addTextActu( const SvgText &);
 
 	void addBackground( const std::string &);
 
@@ -582,14 +599,9 @@ public:
 };
 
 
-class SvgHistogramMaker {
+class SvgGraphMakerBase {
 
-private:
-
-	std::vector <double> leftvec; 
-	std::vector <double> rightvec; 
-	std::vector <int> counts; 
-	bool animated; 
+protected:
 
 	std::string graph_title;
 	std::string xaxis_title; 
@@ -607,6 +619,45 @@ private:
 
 public:
 
+	SvgGraphMakerBase( void);
+
+	virtual ~SvgGraphMakerBase( void);
+
+	void setDefaults( void);
+	
+	void setGraphTitle( const std::string &s);	
+	void setXAxisTitle( const std::string &s);	
+	void setYAxisTitle( const std::string &s);
+
+};
+
+
+class SvgHistogramMaker : public SvgGraphMakerBase {
+
+private:
+
+	std::vector <double> leftvec; 
+	std::vector <double> rightvec; 
+	std::vector <int> counts; 
+	bool animated; 
+
+	// Below are inherited from SvgGraphMakerBase
+	// ----------
+	// std::string graph_title;
+	// std::string xaxis_title; 
+	// std::string yaxis_title; 
+	// double svgwidth;
+	// double svgheight;
+	// double outermargin;
+	// double graph_title_fontsize;
+	// double graph_title_margin; // グラフタイトルの下のマージン
+	// double axis_title_fontsize;
+	// double axis_title_margin; // 軸タイトルと軸ラベルの間のマージン
+	// double axis_label_fontsize;
+	// double axis_ticklength;
+
+public:
+
 	SvgHistogramMaker( void) = delete;
 
 	SvgHistogramMaker( 
@@ -618,13 +669,59 @@ public:
 
 	~SvgHistogramMaker( void);
 
-	void setDefaults( void);
-	
-	void setGraphTitle( const std::string &s);	
-	void setXAxisTitle( const std::string &s);	
-	void setYAxisTitle( const std::string &s);
-	
 	SvgGraph createGraph( void);
+
+	// Below are inherited from SvgGraphMakerBase
+	// ----------
+	// void setDefaults( void);
+	// void setGraphTitle( const std::string &s);	
+	// void setXAxisTitle( const std::string &s);	
+	// void setYAxisTitle( const std::string &s);
+
+};
+
+
+class SvgScatterMaker : public SvgGraphMakerBase {
+
+private:
+
+	std::vector <double> xvec; 
+	std::vector <double> yvec; 
+
+	// Below are inherited from SvgGraphMakerBase
+	// ----------
+	// std::string graph_title;
+	// std::string xaxis_title; 
+	// std::string yaxis_title; 
+	// double svgwidth;
+	// double svgheight;
+	// double outermargin;
+	// double graph_title_fontsize;
+	// double graph_title_margin; // グラフタイトルの下のマージン
+	// double axis_title_fontsize;
+	// double axis_title_margin; // 軸タイトルと軸ラベルの間のマージン
+	// double axis_label_fontsize;
+	// double axis_ticklength;
+
+public:
+
+	SvgScatterMaker( void) = delete;
+
+	SvgScatterMaker( 
+		const std::vector <double> &x0,
+		const std::vector <double> &y0
+	);
+
+	~SvgScatterMaker( void);
+
+	SvgGraph createGraph( void);
+
+	// Below are inherited from SvgGraphMakerBase
+	// ----------
+	// void setDefaults( void);
+	// void setGraphTitle( const std::string &s);	
+	// void setXAxisTitle( const std::string &s);	
+	// void setYAxisTitle( const std::string &s);
 
 };
 
@@ -1178,6 +1275,43 @@ setDefault( void)
 
 }
 
+// デフォルトの方法で、CambusとX軸・Y軸の目盛の位置を決める。
+// 論理座標系での、x・yの最小値・最大値を与える。
+void
+SvgGraph :: 
+setDefaultCambusAndGridpoints( double xmin, double xmax, double ymin, double ymax)
+{
+	
+	// グラフ描画領域の座標（左上、右下）
+	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
+	double graphpane_actuX2 = svgwidth - outermargin; 
+	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
+
+	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
+	double graphheight = graphpane_actuY2 - graphpane_actuY1;
+
+	// ちょうどいい間隔のグリッド線の点を得る。
+	// x軸
+	xgridpoints = getGridPoints( xmin, xmax);
+	// y軸
+	ygridpoints = getGridPoints( ymin, ymax);
+	
+	// 描画範囲は、Gridpointsのさらに5%外側にする。
+	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
+	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
+	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
+	
+	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
+	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
+	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
+	
+	// Cambusの設定
+	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
+	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
+
+}
+
 // GraphPaneの座標系を示すCambusを設定する。
 void 
 SvgGraph :: 
@@ -1249,19 +1383,6 @@ prepareGraph( void)
 	// 枠線
 	addGraphPaneFrame( "black");
 
-	// TODO:
-	//   軸の単位の記載→優先順位は低い。
-	//   以上、<g>での一括指定ができるところが多いが、とりあえず無視する。
-	//   フォントサイズを自動調節する？
-
-	// Memo: 
-	//   SVGアニメをパワポに貼っても動かないらしい。
-	//   textタグで、IEやWordはdominant-baselineが効かないらしい。
-	//   （指定してもdominant-baseline="alphabetic"扱いになる。）
-	//   SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
-	//     （強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
-	//     svgタグのサイズとviewBoxのサイズを合わせたい。
-	
 
 
 }
@@ -1289,6 +1410,14 @@ SvgGraph ::
 addLineActu( const SvgLine &l0)
 {
 	svgf.addElement( l0);
+}
+
+// 座標変換せずにテキストを追加
+void 
+SvgGraph :: 
+addTextActu( const SvgText &t0)
+{
+	svgf.addElement( t0);
 }
 
 // SVG全体の背景色を設定
@@ -1330,7 +1459,7 @@ startDrawingGraphPane( void)
 	double paneWidth = cam.actuWidth;
 	double paneHeight = cam.actuHeight;
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << "<svg "
 	   << "x=\"" << actuX << "\"" << " "
 	   << "y=\"" << actuY << "\"" << " " 
@@ -1471,22 +1600,6 @@ drawEllipse(
 	el.setStroke( color);
 	addElement( el);
 
-/*
-	Point theoP1( cx, cy); 
-	Point theoP2( cx+r, cy); 
-	Point theoP3( cx, cy+r); 
-	Point actuP1 = cam.getActualFromTheoretical( theoP1);
-	Point actuP2 = cam.getActualFromTheoretical( theoP2);
-	Point actuP3 = cam.getActualFromTheoretical( theoP3);
-
-	SvgEllipse el( actuP1.x, actuP1.y, 
-	               actuP2.x - actuP1.x, // 横方向の径
-				   actuP1.y - actuP3.y  // 縦方向の径
-	);
-	el.addFill( "none");
-	el.addStroke( color);
-	svgf.addElement( el);
-*/
 }
 
 // x軸の目盛のヒゲを描く。
@@ -2101,25 +2214,18 @@ const
 }
 
 
-/* ***** class SvgHistogramMaker ***** */
+/* ***** class SvgGraphMakerBase ***** */
 
-SvgHistogramMaker :: 
-SvgHistogramMaker( 
-	const std::vector <double> &lv0,
-	const std::vector <double> &rv0,
-	const std::vector <int> &c0,
-	bool an0 // = false
-) : leftvec( lv0), rightvec( rv0), counts( c0), animated( an0)
-{
-	setDefaults();
-}
+SvgGraphMakerBase :: 
+SvgGraphMakerBase( void)
+{}
 
-SvgHistogramMaker :: 
-~SvgHistogramMaker( void)
+SvgGraphMakerBase :: 
+~SvgGraphMakerBase( void)
 {}
 
 void 
-SvgHistogramMaker :: 
+SvgGraphMakerBase :: 
 setDefaults( void)
 {
 
@@ -2141,25 +2247,43 @@ setDefaults( void)
 }
 
 void 
-SvgHistogramMaker :: 
+SvgGraphMakerBase :: 
 setGraphTitle( const std::string &s)
 {
 	graph_title = s;
 }
 
 void 
-SvgHistogramMaker :: 
+SvgGraphMakerBase :: 
 setXAxisTitle( const std::string &s)
 {
 	xaxis_title = s;
 }
 
 void 
-SvgHistogramMaker :: 
+SvgGraphMakerBase :: 
 setYAxisTitle( const std::string &s)
 {
 	yaxis_title = s;
 }
+
+
+/* ***** class SvgHistogramMaker ***** */
+
+SvgHistogramMaker :: 
+SvgHistogramMaker( 
+	const std::vector <double> &lv0,
+	const std::vector <double> &rv0,
+	const std::vector <int> &c0,
+	bool an0 // = false
+) : leftvec( lv0), rightvec( rv0), counts( c0), animated( an0)
+{
+	setDefaults();
+}
+
+SvgHistogramMaker :: 
+~SvgHistogramMaker( void)
+{}
 
 SvgGraph
 SvgHistogramMaker :: 
@@ -2168,61 +2292,23 @@ createGraph( void)
 
 	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
 
-	// グラフ描画領域の座標（左上、右下）
-	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
-	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
-	double graphpane_actuX2 = svgwidth - outermargin; 
-	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
+	double xmin = leftvec.front();
+	double xmax = rightvec.back();
+	double ymin = 0;
+	double ymax = *( max_element( counts.begin(), counts.end()));
 
-	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
-	double graphheight = graphpane_actuY2 - graphpane_actuY1;
+	svgg.setDefaultCambusAndGridpoints( xmin, xmax, ymin, ymax);
 
-	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
-
-	// x軸
-	double xminval = leftvec.front();
-	double xmaxval = rightvec.back();
-	std::vector <double> xgridpoints = getGridPoints( xminval, xmaxval);
-
-	// y軸
-	double yminval = 0;
-	double ymaxval = *( max_element( counts.begin(), counts.end()));
-	std::vector <double> ygridpoints = getGridPoints( yminval, ymaxval);
-	
-	
-	// 描画範囲は、Gridpointsのさらに5%外側にする。
-	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
-	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
-	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
-	
-	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
-	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
-	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
-	
-
-
-	// SvgGraphインスタンス内のキャンバスの設定
-	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
-	// 　　「即時に」座標変換がなされる。
-	// 　　あとでCambusオブジェクトを入れ替えてもそれまでに追加された描画部品には影響しない。
-
-	Cambus cam;
-	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
-	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
-
-	svgg.setCambus( cam);
-	svgg.setXGridPoints( xgridpoints);
-	svgg.setYGridPoints( ygridpoints);
 	svgg.setGraphTitle( graph_title);
 	svgg.setXAxisTitle( xaxis_title);
 	svgg.setYAxisTitle( yaxis_title);
+
 	svgg.prepareGraph();
 
 
 	// 描画領域への描画開始
 
 	svgg.startDrawingGraphPane();
-
 
 	if ( animated == true){
 		svgg.drawBins( leftvec, rightvec, counts, "gray", true);
@@ -2234,12 +2320,60 @@ createGraph( void)
 
 	// 描画領域への描画終了
 
-
 	return svgg;
-
-
-
 
 }
 
 
+/* ***** class SvgScatterMaker ***** */
+
+SvgScatterMaker :: 
+SvgScatterMaker( 
+	const std::vector <double> &x0,
+	const std::vector <double> &y0
+) : xvec( x0), yvec( y0)
+{
+	setDefaults();
+}
+
+SvgScatterMaker :: 
+~SvgScatterMaker( void)
+{}
+
+SvgGraph
+SvgScatterMaker :: 
+createGraph( void)
+{
+
+	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
+
+	auto xminmax = std::minmax_element( xvec.begin(), xvec.end());
+	double xmin = *( xminmax.first);
+	double xmax = *( xminmax.second);
+
+	auto yminmax = std::minmax_element( yvec.begin(), yvec.end());
+	double ymin = *( yminmax.first);
+	double ymax = *( yminmax.second);
+
+	svgg.setDefaultCambusAndGridpoints( xmin, xmax, ymin, ymax);
+
+	svgg.setGraphTitle( graph_title);
+	svgg.setXAxisTitle( xaxis_title);
+	svgg.setYAxisTitle( yaxis_title);
+
+	svgg.prepareGraph();
+
+
+	// 描画領域への描画開始
+
+	svgg.startDrawingGraphPane();
+
+	svgg.drawPoints( xvec, yvec, "black");
+
+	svgg.endDrawingGraphPane();
+
+	// 描画領域への描画終了
+
+	return svgg;
+
+}
