@@ -2,23 +2,40 @@
 /*
 	
 	stest01.cpp
-	
-	pclub01～04から派生。
+
+	koliのうち統計関係部分のテスト
 	
 	Written by Koji Yamamoto
 	Copyright (C) 2019-2020 Koji Yamamoto
 	
 	TODO:　
+
+	ksvg00.cppを終える。
+	　SvgAddable以下のクラスも、データ保持型にしたい。
+	　　論理座標が要らない場合用。
+	　Cambusはこれでいいのか。
+	　　実際の座標系の範囲、論理座標系の範囲、変換する関数
+	　　を、分けた方が簡単、か？
+	　アニメはまたいずれ。
+
+	-std:c++17でコンパイルが通るかやってみる。
+	gccでも。
+
+	kstat.cppとksvgのテストを書く。
+
+	kdatasetに戻る。
+
+	Nelder-Meadを実装。
+
+
+
+
+	↓以下は前から書いてあるもの。
 	度数分布表をつくる。kstatを見て。
 	　別に、連続変数用の機能をつける。
 	　　start/end, width, bin を指定する方式。
 	　　自動で、スタージェスの公式を使う方式。
 	　　階級の端点の表を与える方式。
-	ヒストグラムを描く。
-	SVGにする。
-
-	-std:c++17でコンパイルが通るかやってみる。
-	gccでも。
 	
 */
 
@@ -177,18 +194,6 @@ int main( int, char *[])
 		svgg.writeFile( "stest01out03.svg");
 	}
 	
-	// pclub06の内容を回収しつつ。↓
-
-	// SvgHistogramでのcreateGraphのうち、Histogram以外に使えるものを
-	// 分離して、SvgGraphに預ける。
-	// 描画範囲とGridPointsを、SvgGraphに自動でやらせる。
-
-	// SvgHistogramでやるべきなのは、Barの描画。
-
-	// その後、散布図でも同様に。
-	
-
-
 	return 0;
 
 
@@ -307,114 +312,22 @@ SvgGraph createScatterAndCircle(
 	std::string xaxis_title = "x";
 	std::string yaxis_title = "y";
 
-	// SVG領域の大きさと、座標系のある領域の大きさを指定することで、それらしく計算してほしい。
-	double svgwidth = 500;
-	double svgheight = 500;
-	double outermargin = 20;
-	double graph_title_fontsize = 20;
-	double graph_title_margin = 10; // グラフタ\イトルの下のマージン
-	double axis_title_fontsize = 20;
-	double axis_title_margin = 5; // 軸タイトルと軸ラベルの間のマージン
-	double axis_label_fontsize = 14;
-	double axis_ticklength = 5;
+	SvgScatterMaker maker( xvec, yvec);
+	maker.setGraphTitle( graph_title);
+	maker.setXAxisTitle( xaxis_title); 	
+	maker.setYAxisTitle( yaxis_title); 
 
-	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
+	auto svgg = maker.createGraph(); 
 
-	// グラフ描画領域の座標（左上、右下）
-	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
-	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
-	double graphpane_actuX2 = svgwidth - outermargin; 
-	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
+	GraphEllipse el( 0, 0, 1, 1);
+	el.setFill( "none");
+	el.setStroke( "red");
+	el.setStrokewidth( 3);
+	svgg.addElement( el);
 
-	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
-	double graphheight = graphpane_actuY2 - graphpane_actuY1;
-
-	// ちょうどいい間隔のグリッド線の点と、範囲を得る。
-
-	// x軸
-	double xminval = *( min_element( xvec.begin(), xvec.end()));
-	double xmaxval = *( max_element( xvec.begin(), xvec.end()));
-	std::vector <double> xgridpoints = getGridPoints( xminval, xmaxval);
-
-	// y軸
-	double yminval = *( min_element( yvec.begin(), yvec.end()));
-	double ymaxval = *( max_element( yvec.begin(), yvec.end()));
-	std::vector <double> ygridpoints = getGridPoints( yminval, ymaxval);
-
-	// 描画範囲は、Gridpointsのさらに5%外側にする。
-	double theoWidthTemp = xgridpoints.back() - xgridpoints.front();
-	double theoXMin = xgridpoints.front() - 0.05 * theoWidthTemp;
-	double theoXMax = xgridpoints.back() + 0.05 * theoWidthTemp;
-	
-	double theoHeightTemp = ygridpoints.back() - ygridpoints.front();
-	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
-	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
-
-	// SvgGraphインスタンス内のキャンバスの設定
-	// 注：このCambusオブジェクトが与えられたあとで、このオブジェクトを用いて
-	// 　　「即時に」座標変換がなされる。
-	// 　　あとでCambusオブジェクトを入れ替えてもそれまでに追加された描画部品には影響しない。
-
-	Cambus cam;
-	cam.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
-	cam.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
-	svgg.setCambus( cam);
-
-
-	// 背景の描画開始
-
-	svgg.addBackground( "whitesmoke");
-
-	svgg.addGraphPaneColor( "gainsboro");
-
-	svgg.drawXGridLines( xgridpoints, "silver");
-	svgg.drawYGridLines( ygridpoints, "silver");
-
-	// 背景の描画終了
-
-
-
-	// 周辺情報記載の開始
-
-	svgg.addXAxisTicks( xgridpoints, axis_ticklength, "black");
-	svgg.addXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
-
-	// 目盛ラベルの数値の桁数はどうなるのか。。
-
-	svgg.addYAxisTicks( ygridpoints, axis_ticklength, "black");
-	svgg.addYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-
-	svgg.addGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
-	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
-
-	svgg.addXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	svgg.addYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	
-	// 周辺情報記載の終了
-
-
-	// 枠線
-	svgg.addGraphPaneFrame( "black");
-
-
-
-
-	// メインの情報の描画終了
-
-	svgg.drawPoints( xvec, yvec, "gray");
-
-	svgg.drawEllipse( 0, 0, 1, 1, "red");
-
-	// メインの情報の描画終了
-
-
-
-	return svgg;
+	return svgg; 
 
 }
-
-
 
 
 /* ********** Definitions of Member Functions ********** */
