@@ -29,7 +29,7 @@
 #include <cmath>
 
 #include <k09/kutil01.cpp>
-#include <k09/kalgo00.cpp>
+#include <k09/kalgo01.cpp>
 
 
 /* ********** Using Directives ********** */
@@ -976,7 +976,7 @@ const
 		const T &key = pair.first;
 		
 		double left, right;
-		rtable->getLeftRightForCode( left, right, key);
+		rtablep->getLeftRightForCode( left, right, key);
 		lvec.push_back( left);
 		rvec.push_back( right);
 
@@ -1129,7 +1129,10 @@ const
 template <typename TOrigin, typename TCode>
 void
 RecodeTable <TOrigin, TCode> :: 
-print( ostream &os, string sep = ","s)
+print(
+	ostream &os,
+	string sep // = ","s
+)
 const
 {
 
