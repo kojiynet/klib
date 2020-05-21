@@ -66,7 +66,7 @@ public:
 
 	void getBivariateNormal( double &, double &, double, double, double, double, double);
 
-	std::vector <double> && getRealUniformSeq( int, double = 0.0, double = 1.0);
+	std::vector <double> getRealUniformSeq( int, double = 0.0, double = 1.0);
 	
 	friend class RandomDiscreteUniform;
 	
@@ -249,7 +249,7 @@ void RandomNumberEngine :: getBivariateNormal(
 // the size of vector will be n
 // return value will be moved 
 // default values: min = 0.0, max = 1.0
-std::vector <double> && 
+std::vector <double> 
 RandomNumberEngine :: 
 getRealUniformSeq( int n, double min, double max)
 {
