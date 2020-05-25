@@ -18,6 +18,7 @@
 
 #include <random>
 #include <cstdint>
+#include <k09/kutil01.cpp>
 
 
 /* ********** Using Directives ********** */
@@ -140,7 +141,7 @@ RandomNumberEngine :: RandomNumberEngine( void)
 RandomNumberEngine :: RandomNumberEngine( unsigned int s)
 {
 	
-	// Because seed of mt19937 is actually set by the type "unit_fast32_t",
+	// Because seed of mt19937 is actually set by the type "uint_fast32_t",
 	// the boundary will be checked;
 	// In the most environments "unsigned int" is a 32-bit type.
 	// UINT_FAST32_MAX is defined in <cstdint>
@@ -174,7 +175,7 @@ void RandomNumberEngine :: copyFrom( const RandomNumberEngine &rne0)
 void RandomNumberEngine :: setSeed( unsigned int s)
 {
 	
-	// Because seed of mt19937 is actually set by the type "unit_fast32_t",
+	// Because seed of mt19937 is actually set by the type "uint_fast32_t",
 	// the boundary will be checked;
 	// In the most environments "unsigned int" is a 32-bit type.
 	// UINT_FAST32_MAX is defined in <cstdint>
