@@ -9,6 +9,9 @@
 	
 	Module for Statistical Computations
 	
+	k10になるときに以下の関数を消す。
+	double boostMean( const std::vector <double> &dv0)
+	
 	Note:
 	As for FreqType, possibly in the future we should refer the following libraries:
 	　GSL's Histogram

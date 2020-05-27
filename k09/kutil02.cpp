@@ -646,6 +646,7 @@ Timer :: ~Timer( void)
 void Timer :: restart( void)
 {
     startt = std::chrono::system_clock::now();
+    endtValid = false;
 }
 
 // gets the current time point and stores it in endt
