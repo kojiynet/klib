@@ -7,10 +7,20 @@
 	Written by Koji Yamamoto
 	Copyright (C) 2020 Koji Yamamoto
 
+	TODO
+	　Cambusはこれでいいのか。
+	　　実際の座標系の範囲、論理座標系の範囲、変換する関数
+	　　を、分けた方が簡単、か？
+
+	-std:c++17でコンパイルが通るかやってみる。
+	gccでも。
+	
 	TODO:
 	アニメーション実装でコメントアウトしているところを追加したい。
 	軸の単位の記載→優先順位は低い。
 	フォントサイズを自動調節
+
+	SvgAddableをまとったクラスは、論理座標が要らない場合用。
 
 	Memo: 
 	SVGアニメをパワポに貼っても動かないらしい。
@@ -36,8 +46,8 @@
 
 /* ********** Class Declarations ********** */
 
-struct Cambus;
 struct Point;
+struct Cambus;
 
 class SvgFile;
 
@@ -185,6 +195,7 @@ public:
 
 	SvgFile() = delete;
 	SvgFile( double w0, double h0, double x1, double y1, double x2, double y2);
+	SvgFile( double w0, double h0);
 	~SvgFile( void);
 
 	void addFileContent( const std::string &s0);
@@ -212,7 +223,15 @@ class SvgBasicShape {
 
 protected:
 
+	// あとで消す。↓
 	std::vector <std::string> attrvec;
+
+	std::string fill;
+	std::string stroke;
+	std::string strokewidth;
+	std::string fillopacity;
+
+	virtual std::string getBasicShapeAttr( void) const;
 
 public:
 
@@ -226,32 +245,38 @@ public:
 
 };
 
-// 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
+
+// アニメーション機能は削除した。
 class SvgRect : public SvgBasicShape, public SvgAddable {
 
 private:
-	
-	std::vector <std::string> animatevec;
+
+	double x;
+	double y;
+	double w;
+	double h;
 
 public:
 
 	SvgRect( double x0, double y0, double w0, double h0);
 	~SvgRect( void);
 
-	void addAnimate( const std::string &attr, double v1, double v2, double sec);
-
 	std::string getContent( void) const;
 
 };
 
-// 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
+
 class SvgCircle : public SvgBasicShape, public SvgAddable {
 
 private:
 
+	double cx;
+	double cy;
+	double r;
+
 public:
 
-	SvgCircle( double x, double y, double r);
+	SvgCircle( double, double, double);
 	~SvgCircle( void);
 
 	std::string getContent( void) const;
@@ -259,33 +284,45 @@ public:
 };
 
 
-// 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
 class SvgEllipse : public SvgBasicShape, public SvgAddable  {
 
 private:
 
+	double cx;
+	double cy;
+	double rx; // x軸方向の半径
+	double ry; // y軸方向の半径
+
 public:
 
-	SvgEllipse( double cx, double cy, double rx, double ry);
+	SvgEllipse( double cx0, double cy0, double rx0, double ry0);
 	~SvgEllipse( void);
 
 	std::string getContent( void) const;
 
 };
 
+
+// →データ保持型に変更中。
 // 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
 class SvgLine : public SvgBasicShape, public SvgAddable  {
 
 private:
 
+	double x1;
+	double y1;
+	double x2;
+	double y2;
+
 public:
 
-	SvgLine( double x1, double y1, double x2, double y2);
+	SvgLine( double x1_, double y1_, double x2_, double y2_);
 	~SvgLine( void);
 
 	std::string getContent( void) const;
 
 };
+
 
 // 各属性をデータとして保有するのではなく属性指定テキストにして保有する。
 class SvgText : public SvgAddable  {
@@ -293,7 +330,19 @@ class SvgText : public SvgAddable  {
 private:
 	
 	std::string text; 
+
+	// ↓あとで消す
 	std::vector <std::string> attrvec;
+
+	double x;
+	double y; 
+	std::string fontfamily;
+	std::string fontsize;
+	std::string textanchor;
+	std::string dominantbaseline;
+	std::string rotateDeg;
+	std::string rotateX;
+	std::string rotateY;
 
 public:
 
@@ -837,6 +886,13 @@ SvgFile( double w0, double h0, double x1, double y1, double x2, double y2)
 {}
 
 SvgFile :: 
+SvgFile( double w0, double h0)
+ : width( w0), height( h0),
+   viewBoxX1( 0), viewBoxY1( 0), viewBoxX2( w0), viewBoxY2( h0),
+   filecontent()
+{}
+
+SvgFile :: 
 ~SvgFile( void)
 {}
 
@@ -936,48 +992,76 @@ writeFile(
 
 SvgBasicShape :: 
 SvgBasicShape( void)
- : attrvec()
+ : attrvec(), fill(), stroke(), strokewidth(), fillopacity()
 {}
 
-//virtual 
+// virtual 
 SvgBasicShape :: 
 ~SvgBasicShape( void)
 {}
 
-//virtual 
+// virtual
+std::string 
+SvgBasicShape :: 
+getBasicShapeAttr( void) const 
+{
+
+	std::stringstream ss;
+
+	if ( fill.size() > 0){
+		ss << "fill=" << "\"" << fill << "\"" << " ";
+	}
+
+	if ( stroke.size() > 0){
+		ss << "stroke=" << "\"" << stroke << "\"" << " ";
+	}
+
+	if ( strokewidth.size() > 0){
+		ss << "stroke-width=" << "\"" << strokewidth << "\"" << " ";
+	}
+
+	if ( fillopacity.size() > 0){
+		ss << "fill-opacity=" << "\"" << fillopacity << "\"" << " ";
+	}
+
+	return ss.str();
+
+}
+
+// virtual 
 void 
 SvgBasicShape :: 
 addFill( const std::string &s0)
 {
-	attrvec.push_back( R"(fill=")" + s0 + R"(")");
+	fill = s0;
 }
 
-//virtual 
+// virtual 
 void 
 SvgBasicShape :: 
 addStroke( const std::string &s0)
 {
-	attrvec.push_back( R"(stroke=")" + s0 + R"(")");
+	stroke = s0;
 }
 
-//virtual 
+// virtual 
 void 
 SvgBasicShape :: 
 addStrokewidth( double v0)
 {
 	std::stringstream ss;
-	ss << R"(stroke-width=")" << v0 << R"(")";
-	attrvec.push_back( ss.str());
+	ss << v0;
+	strokewidth = ss.str();
 }
 
-//virtual 
+// virtual 
 void 
 SvgBasicShape :: 
 addFillopacity( double v0)
 {
 	std::stringstream ss;
-	ss << R"(fill-opacity=")" << v0 << R"(")";
-	attrvec.push_back( ss.str());
+	ss << v0;
+	fillopacity = ss.str();
 }
 
 
@@ -985,35 +1069,12 @@ addFillopacity( double v0)
 
 SvgRect :: 
 SvgRect( double x0, double y0, double w0, double h0)
-: SvgBasicShape(), animatevec()
-{
-	std::stringstream ss;
-	ss << R"(x=")"      << x0 << R"(")" << " "
-		<< R"(y=")"      << y0 << R"(")" << " "
-		<< R"(width=")"  << w0 << R"(")" << " " 
-		<< R"(height=")" << h0 << R"(")";
-	attrvec.push_back( ss.str());
-}
+: SvgBasicShape(), x( x0), y( y0), w( w0), h( h0)
+{}
 
 SvgRect :: 
 ~SvgRect( void)
 {}
-
-void 
-SvgRect :: 
-addAnimate( const std::string &attr, double v1, double v2, double sec)
-{
-	std::stringstream ss;
-	ss << "<animate "
-		<< "attributeName=\"" << attr << "\"" << " "
-		<< "begin=\"0s\"" << " " 
-		<< "dur=\"" << sec << "\"" << " "
-		<< "from=\"" << v1 << "\"" << " " 
-		<< "to=\"" << v2 << "\"" << " " 
-		<< "repeatCount=\"1\""
-		<< "/>";
-	animatevec.push_back( ss.str());
-}
 
 std::string 
 SvgRect :: 
@@ -1021,33 +1082,23 @@ getContent( void)
 const
 {
 
-	std::string ret;
+	std::stringstream ss;
 
-	if ( animatevec.size() < 1){
-	
-		ret = "<rect";
-		for ( const auto &attr : attrvec){
-			ret += " ";
-			ret += attr;
-		}
-		ret += " />";
-	
-	} else {
-	
-		ret = "<rect";
-		for ( const auto &attr : attrvec){
-			ret += " ";
-			ret += attr;
-		}
-		ret += " >";
-		for ( const auto &animatetag : animatevec){
-			ret += animatetag;
-		}
-		ret += "</rect>";
-	
-	}
+	ss << "<rect ";
 
-	return ret;
+	ss << 
+		R"(x=")"      << x << R"(")" << " " << 
+		R"(y=")"      << y << R"(")" << " " << 
+		R"(width=")"  << w << R"(")" << " " << 
+		R"(height=")" << h << R"(")" << " ";
+	
+	ss << getBasicShapeAttr();
+
+	ss << ">";
+
+	ss << "</rect>";
+
+	return ss.str();
 
 }
 
@@ -1055,15 +1106,9 @@ const
 /* ***** class SvgCircle ***** */
 
 SvgCircle :: 
-SvgCircle( double x, double y, double r)
-: SvgBasicShape() 
-{
-	std::stringstream ss;
-	ss << R"(cx=")" << x << R"(")" << " "
-		<< R"(cy=")" << y << R"(")" << " "
-		<< R"(r=")" << r << R"(")";
-	attrvec.push_back( ss.str());
-}
+SvgCircle( double cx0, double cy0, double r0)
+: SvgBasicShape(), cx( cx0), cy( cy0), r( r0)
+{}
 
 SvgCircle :: 
 ~SvgCircle( void)
@@ -1074,29 +1119,33 @@ SvgCircle ::
 getContent( void)
 const
 {
-	std::string ret = "<circle";
-	for ( const auto &attr : attrvec){
-		ret += " ";
-		ret += attr;
-	}
-	ret += " />";
-	return ret;
+
+	std::stringstream ss;
+
+	ss << "<circle ";
+
+	ss <<
+		R"(cx=")" << cx << R"(")" << " " << 
+		R"(cy=")" << cy << R"(")" << " " << 
+		R"(r=")"  << r  << R"(")" << " ";
+	
+	ss << getBasicShapeAttr();
+
+	ss << ">";
+
+	ss << "</circle>";
+
+	return ss.str();
+
 }
 
 
 /* ***** class SvgEllipse ***** */
 
 SvgEllipse :: 
-SvgEllipse( double cx, double cy, double rx, double ry)
-: SvgBasicShape() 
-{
-	std::stringstream ss;
-	ss << R"(cx=")" << cx << R"(")" << " "
-		<< R"(cy=")" << cy << R"(")" << " "
-		<< R"(rx=")" << rx << R"(")" << " "
-		<< R"(ry=")" << ry << R"(")";
-	attrvec.push_back( ss.str());
-}
+SvgEllipse( double cx0, double cy0, double rx0, double ry0)
+: SvgBasicShape(), cx( cx0), cy( cy0), rx( rx0), ry( ry0) 
+{}
 
 SvgEllipse :: 
 ~SvgEllipse( void)
@@ -1107,29 +1156,34 @@ SvgEllipse ::
 getContent( void) 
 const
 {
-	std::string ret = "<ellipse";
-	for ( const auto &attr : attrvec){
-		ret += " ";
-		ret += attr;
-	}
-	ret += " />";
-	return ret;
+
+	std::stringstream ss;
+
+	ss << "<ellipse ";
+
+	ss <<
+		R"(cx=")" << cx << R"(")" << " " << 
+		R"(cy=")" << cy << R"(")" << " " << 
+		R"(rx=")" << rx << R"(")" << " " << 
+		R"(ry=")" << ry << R"(")" << " ";	
+	
+	ss << getBasicShapeAttr();
+
+	ss << ">";
+
+	ss << "</ellipse>";
+
+	return ss.str();	
+
 }
 
 
 /* ***** class SvgLine ***** */
 
 SvgLine :: 
-SvgLine( double x1, double y1, double x2, double y2)
-: SvgBasicShape() 
-{
-	std::stringstream ss;
-	ss << R"(x1=")" << x1 << R"(")" << " "
-		<< R"(y1=")" << y1 << R"(")" << " "
-		<< R"(x2=")" << x2 << R"(")" << " "
-		<< R"(y2=")" << y2 << R"(")";
-	attrvec.push_back( ss.str());
-}
+SvgLine( double x1_, double y1_, double x2_, double y2_)
+: SvgBasicShape(), x1( x1_), y1( y1_), x2( x2_), y2( y2_)  
+{}
 
 SvgLine :: 
 ~SvgLine( void)
@@ -1140,13 +1194,25 @@ SvgLine ::
 getContent( void) 
 const
 {
-	std::string ret = "<line";
-	for ( const auto &attr : attrvec){
-		ret += " ";
-		ret += attr;
-	}
-	ret += " />";
-	return ret;
+
+	std::stringstream ss;
+
+	ss << "<line ";
+
+	ss << 
+		R"(x1=")" << x1 << R"(")" << " " << 
+		R"(y1=")" << y1 << R"(")" << " " << 
+		R"(x2=")" << x2 << R"(")" << " " << 
+		R"(y2=")" << y2 << R"(")" << " ";
+
+	ss << getBasicShapeAttr();
+
+	ss << ">";
+
+	ss << "</line>";
+
+	return ss.str();
+
 }
 
 
@@ -1154,29 +1220,20 @@ const
 
 SvgText :: 
 SvgText( double x0, double y0, const std::string &s0)
- : text( s0), attrvec()
-{
-	std::stringstream ss;
-	ss << R"(x=")" << x0 << R"(")" << " "
-	   << R"(y=")" << y0 << R"(")";
-	attrvec.push_back( ss.str());
-}
+: text( s0), attrvec(), x( x0), y( y0), 
+  fontfamily(), fontsize(), textanchor(), dominantbaseline(),
+  rotateDeg(), rotateX(), rotateY() 
+{}
 
 SvgText :: 
 SvgText( double x0, double y0, double v0)
- : text(), attrvec()
+: text(), attrvec(), x( x0), y( y0), 
+  fontfamily(), fontsize(), textanchor(), dominantbaseline(),
+  rotateDeg(), rotateX(), rotateY() 
 {
-	{
-		std::stringstream ss;
-		ss << v0;
-		text.assign( ss.str());
-	}
-	{
-		std::stringstream ss;
-		ss << R"(x=")" << x0 << R"(")" << " "
-		   << R"(y=")" << y0 << R"(")";
-		attrvec.push_back( ss.str());
-	}
+	std::stringstream ss;
+	ss << v0;
+	text.assign( ss.str());
 }
 
 SvgText :: 
@@ -1187,7 +1244,7 @@ void
 SvgText :: 
 addFontfamily( const std::string &s0)
 {
-	attrvec.push_back( R"(font-family=")" + s0 + R"(")");
+	fontfamily = s0;
 }	
 
 void 
@@ -1196,45 +1253,87 @@ addFontsize( double v0)
 {
 	std::stringstream ss;
 	ss << v0;
-	attrvec.push_back( R"(font-size=")" + ss.str() + R"(")");
+	fontsize = ss.str();
 }	
 
 void 
 SvgText :: 
 addTextanchor( const std::string &s0)
 {
-	attrvec.push_back( R"(text-anchor=")" + s0 + R"(")");
+	textanchor = s0;
 }	
 
 void 
 SvgText :: 
 addDominantbaseline( const std::string &s0)
 {
-	attrvec.push_back( R"(dominant-baseline=")" + s0 + R"(")");
+	dominantbaseline = s0;
 }	
 
 void 
 SvgText :: 
 addRotate( double d0, double x0, double y0)
 {
-	std::stringstream ss;
-	ss << R"(transform="rotate)" << "(" << d0 << " " << x0 << " " << y0 << ")" << R"(")";
-	attrvec.push_back( ss.str());
+	{
+		std::stringstream ss;
+		ss << d0;
+		rotateDeg = ss.str();
+	}
+	{
+		std::stringstream ss;
+		ss << x0;
+		rotateX = ss.str();
+	}
+	{
+		std::stringstream ss;
+		ss << y0;
+		rotateY = ss.str();
+	}
+
 }	
 
 std::string 
 SvgText :: 
 getContent( void) const
 {
-	std::string ret = "<text";
-	for ( const auto &attr : attrvec){
-		ret += " ";
-		ret += attr;
+
+	std::stringstream ss;
+
+	ss << "<text ";
+
+	ss << R"(x=")" << x << R"(")" << " "
+	   << R"(y=")" << y << R"(")" << " ";
+	
+	if ( fontfamily.size() > 0){
+		ss << R"(font-family=")" << fontfamily << R"(")" << " ";
 	}
-	ret += ">";
-	ret += text;
-	ret += "</text>";
-	return ret;
+
+	if ( fontsize.size() > 0){
+		ss << R"(font-size=")" << fontsize << R"(")" << " ";
+	}
+
+	if ( textanchor.size() > 0){
+		ss << R"(text-anchor=")" << textanchor << R"(")" << " ";
+	}
+
+	if ( dominantbaseline.size() > 0){
+		ss << R"(dominant-baseline=")" << dominantbaseline << R"(")" << " ";
+	}
+
+	if ( rotateDeg.size() > 0){
+		ss << R"(transform="rotate)" << 
+				"(" << rotateDeg << " " << rotateX << " " << rotateY << ")"
+		   << R"(")";
+	}
+
+	ss << ">";
+
+	ss << text;
+
+	ss << "</text>";
+
+	return ss.str();
+
 }
 
 
