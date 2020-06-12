@@ -10,18 +10,12 @@
 	
 	TODO:　
 
-	ksvg00.cppを終える。
-	　SvgAddable以下のクラスも、データ保持型にしたい。
-	　　論理座標が要らない場合用。
-	　Cambusはこれでいいのか。
-	　　実際の座標系の範囲、論理座標系の範囲、変換する関数
-	　　を、分けた方が簡単、か？
-	　アニメはまたいずれ。
+	ksvggraph.cppのテストを書く。
 
 	-std:c++17でコンパイルが通るかやってみる。
 	gccでも。
 
-	kstat.cppとksvgのテストを書く。
+	kstat.cppのテストを書く。
 
 	kdatasetに戻る。
 
@@ -45,7 +39,7 @@
 #include <k09/kdataset01.cpp>
 #include <k09/kstat02.cpp>
 #include <k09/koutputfile00.cpp>
-#include <k09/ksvg00.cpp>
+#include <k09/ksvggraph00.cpp>
 #include <k09/krand00.cpp>
 #include <iostream> 
 #include <iomanip>
@@ -213,65 +207,6 @@ int main( int, char *[])
 	　　階級の端点の表を与える方式。
 	*/
 
-
-/*
-	// ちょうどいい間隔と基準点の実験。
-	{
-		vector <double> gridpoints = getGridPoints( -12.34, 567.8);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-	
-	{
-		vector <double> gridpoints = getGridPoints( -12.34, 567.8, 4, false, false);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-	
-	{
-		vector <double> gridpoints = getGridPoints( -1234.5, 567.8);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-
-	{
-		vector <double> gridpoints = getGridPoints( -1234.5, 567.8, 5);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-
-	{
-		vector <double> gridpoints = getGridPoints( 123.5, 5678.9);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-
-	{
-		vector <double> gridpoints = getGridPoints( -80001.0, -299.9);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-
-	{
-		vector <double> gridpoints = getGridPoints( -80001.0, -299.9, 5);
-		for ( auto d : gridpoints){
-			cout << d << endl;
-		}
-		cout << endl;
-	}
-*/
 }
 
 SvgGraph calculatePi( double n)
