@@ -2,6 +2,8 @@
 /*
 	
 	ksvgtest01.cpp 
+
+	Test for ksvg00.cpp in k09
 		
 */
 
@@ -65,14 +67,22 @@ int main( int argc, char *argv[])
 	svgf.addElement( l0);
 
 	SvgText t0( 200, 200, 0.123);
-	t0.addFontfamily( "Century");
+	t0.addFontfamily( "Arial");
 	t0.addFontsize( 50);
 	t0.addTextanchor( "middle"); 
 	t0.addDominantbaseline( "alphabetic"); 
 	t0.addRotate( 30, 200, 200);
 	svgf.addElement( t0);	
 
-	svgf.writeFile( "ksvgtest01out01.svg");
+	SvgText t1( 300, 150, "another font");
+	t1.addFontfamily( "Century");
+	t1.addFontsize( 40);
+	t1.addTextanchor( "middle"); 
+	t1.addDominantbaseline( "alphabetic"); 
+	t1.addRotate( 90, 300, 150);
+	svgf.addElement( t1);	
+
+	svgf.writeFile( "ksvgtest01out.svg");
 
 	return 0;
 
