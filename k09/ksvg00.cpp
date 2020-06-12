@@ -11,19 +11,16 @@
 	以下の場合はさらにsvggraphを使う。
 	・特定の形式のグラフを出力する場合。
 	・座標変換をかける場合。
-
-	-std:c++17でコンパイルが通るかやってみる。
-	gccでも。
 	
 	SvgAddableをまとったクラスは、論理座標が要らない場合用。
 
 	Memo: 
 	SVGアニメをパワポに貼っても動かないらしい。
 	textタグで、IEやWordはdominant-baselineが効かないらしい。
-	　（指定してもdominant-baseline="alphabetic"扱いになる。）
+	（指定してもdominant-baseline="alphabetic"扱いになる。）
 	SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
-	　（強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
-	　svgタグのサイズとviewBoxのサイズを合わせたい。）
+	（強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする
+	　そこで、svgタグのサイズとviewBoxのサイズを合わせたい。）
 
 */	
 
@@ -80,7 +77,9 @@ private:
 public:
 
 	SvgFile() = delete;
-	SvgFile( double w0, double h0, double x1, double y1, double x2, double y2);
+	SvgFile(
+		double w0, double h0, double x1, double y1, double x2, double y2
+	);
 	SvgFile( double w0, double h0);
 	~SvgFile( void);
 
@@ -303,10 +302,16 @@ getFileContent( void)
 	// 2行目
 	{
 		std::stringstream ss;
-		ss << R"(<svg width=")" << width << R"(px")" << " " 
-		<< R"(height=")" << height << R"(px")" << " " 
-		<< R"(viewBox=")" << viewBoxX1 << " " << viewBoxY1 << " " << viewBoxX2 << " " << viewBoxY2 << R"(")" << " " 
-		<< R"(xmlns="http://www.w3.org/2000/svg">)";
+		ss << 
+			R"(<svg width=")" << width << R"(px")" << " " <<
+			R"(height=")" << height << R"(px")" << " " <<
+			R"(viewBox=")" <<
+				viewBoxX1 << " " << 
+				viewBoxY1 << " " << 
+				viewBoxX2 << " " << 
+				viewBoxY2 << 
+			R"(")" << " " <<
+			R"(xmlns="http://www.w3.org/2000/svg">)";
 		ret.push_back( ss.str());
 	}
 
@@ -315,9 +320,11 @@ getFileContent( void)
 
 	// 最後の2行
 	ret.push_back( "</svg>");
-	std::string detector = "<!-- " 
-						u8"\u6587\u5B57\u30B3\u30FC\u30C9\u8B58\u5225\u7528" // 「文字コード識別用」というUTF-8文字列
-						" -->";
+	std::string detector =
+		"<!-- " 
+		u8"\u6587\u5B57\u30B3\u30FC\u30C9\u8B58\u5225\u7528"
+		// 「文字コード識別用」というUTF-8文字列
+		" -->";
 	ret.push_back( detector);
 	
 	return ret;
@@ -327,11 +334,13 @@ getFileContent( void)
 // ファイルに書き出すメソッド
 // 正常終了でtrue、異常終了でfalseを返す。
 // 
-// appendのデフォルト値はtrue、overwriteのデフォルト値はfalse、askのデフォルト値はtrue。
+// appendのデフォルト値はtrue、overwriteのデフォルト値はfalse、
+// askのデフォルト値はtrue。
 // 同じファイル名のファイルがすでに存在する場合の挙動は以下のとおり。
 // appendがtrueなら、追加書き込みモードで開く。overwriteとaskは無視する。
 // appendがfalseで、overwriteがtrueなら、上書きする。
-// appendがfalseで、overwriteがfalseで、askがtrueなら、上書きするかどうかをコンソールで尋ねる。
+// appendがfalseで、overwriteがfalseで、askがtrueなら、上書きするかどうかを
+// コンソールで尋ねる。
 // appendがfalseで、overwriteがfalseで、askがfalseなら、ファイルを開かない。
 bool 
 SvgFile :: 

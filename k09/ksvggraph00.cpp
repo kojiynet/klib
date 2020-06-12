@@ -8,7 +8,7 @@
 	Copyright (C) 2020 Koji Yamamoto
 
 	当面のTODO
-	　ksvgとksvggraphのテストを書く。
+	　ksvggraphのテストを書く。
 	
 
 	TODO:
@@ -16,13 +16,10 @@
 	軸の単位の記載→優先順位は低い。
 	フォントサイズを自動調節
 
-	Memo: 
-	SVGアニメをパワポに貼っても動かないらしい。
-	textタグで、IEやWordはdominant-baselineが効かないらしい。
-	　（指定してもdominant-baseline="alphabetic"扱いになる。）
-	SVGのviewBoxについて：アスペクト比が違っているとわかりにくい。
-	　（強制的に余白がつくられたりするか、強制的に拡大縮小して円が歪んだりする）ので、
-	　svgタグのサイズとviewBoxのサイズを合わせたい。）
+	記事を書く？
+	・「いい感じの間隔」で点をとることについて？
+	・SVGの謎について？ksvg.cppに書いた。
+
 */	
 
 
@@ -272,13 +269,15 @@ public:
 	);
 
 	void addXAxisLabels(
-		const std::vector <double> &, const std::string &, double, double, double
+		const std::vector <double> &, const std::string &,
+		double, double, double
 	);
-
+	
 	void addYAxisLabels(
-		const std::vector <double> &, const std::string &, double, double, double
+		const std::vector <double> &, const std::string &,
+		double, double, double
 	);
-
+	
 	void addGraphTitle(
 		const std::string &, const std::string &, double, double, double
 	);
@@ -602,8 +601,10 @@ public:
 
 /* ********** Function Definitions ********** */
 
-// [min0, max0]に、いい感じの間隔で点をとる。
-// k0個以上で最小の点を返す。
+// [min0, max0]に、「いい感じの間隔」で点をとる。
+// k0個以上で最小個数の点を返す。
+// この個数には、以下の新しいminと新しいmaxは含まない。
+// 
 // newminがtrueのとき、得られた間隔に乗る新しいminも返す。
 // newmaxがtrueのとき、得られた間隔に乗る新しいmaxも返す。
 // 以下のサイトのアルゴリズムに近そう。
@@ -617,9 +618,9 @@ getGridPoints(
 	bool newmax  // = true
 )
 {
-
+	
 	using namespace std;
-
+	
 	std::vector <double> ret;
 	
 	// この数以上の最小の点を返すようにする。
@@ -627,7 +628,7 @@ getGridPoints(
 
 	// error
 	if ( min0 >= max0){ 
-		alert( "getGripPoints()");
+		alert( "getGridPoints()");
 		return ret;
 	}
 
@@ -649,11 +650,12 @@ getGridPoints(
 	while ( loop){
 
 		for ( auto h : headcands){
-
+			
 			ret.clear();
 			interval = base10val * h;
-
-			// setting startpoint; to avoid startpoint being "-0", we do a little trick.
+			
+			// setting startpoint;
+			// to avoid startpoint being "-0", we do a little trick.
 			double startpoint = ceil( min0 / interval);
 			if ( startpoint > -1.0 && startpoint < 1.0){
 				startpoint = 0.0;
@@ -667,7 +669,7 @@ getGridPoints(
 				loop = false;
 				break;
 			}
-
+			
 		}
 
 		base10val /= 10.0;
@@ -740,15 +742,24 @@ setDefault( void)
 // 論理座標系での、x・yの最小値・最大値を与える。
 void
 SvgGraph :: 
-setDefaultCambusAndGridpoints( double xmin, double xmax, double ymin, double ymax)
+setDefaultCambusAndGridpoints(
+	double xmin, double xmax, double ymin, double ymax
+)
 {
 	
 	// グラフ描画領域の座標（左上、右下）
-	double graphpane_actuX1 = outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength; 
-	double graphpane_actuY1 = outermargin + graph_title_fontsize + graph_title_margin;
-	double graphpane_actuX2 = svgwidth - outermargin; 
-	double graphpane_actuY2 = svgheight - ( outermargin + axis_title_fontsize + axis_title_margin + axis_label_fontsize + axis_ticklength);
-
+	double graphpane_actuX1 = 
+		outermargin + axis_title_fontsize + axis_title_margin + 
+		axis_label_fontsize + axis_ticklength; 
+	double graphpane_actuY1 = 
+		outermargin + graph_title_fontsize + graph_title_margin;
+	double graphpane_actuX2 = 
+		svgwidth - outermargin; 
+	double graphpane_actuY2 = 
+		svgheight - 
+		( outermargin + axis_title_fontsize + axis_title_margin +
+		  axis_label_fontsize + axis_ticklength);
+	
 	double graphwidth = graphpane_actuX2 - graphpane_actuX1;
 	double graphheight = graphpane_actuY2 - graphpane_actuY1;
 
@@ -767,10 +778,12 @@ setDefaultCambusAndGridpoints( double xmin, double xmax, double ymin, double yma
 	double theoYMin = ygridpoints.front() - 0.05 * theoHeightTemp;
 	double theoYMax = ygridpoints.back() + 0.05 * theoHeightTemp;
 	
-	// Cambusの設定
-	coord.setActual( graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2);
+	// Coordinatesの設定
+	coord.setActual(
+		graphpane_actuX1, graphpane_actuY1, graphpane_actuX2, graphpane_actuY2
+	);
 	coord.setTheoretical( theoXMin, theoYMin, theoXMax, theoYMax);
-
+	
 }
 
 // GraphPaneの座標系を示すCoordinatesを設定する。
@@ -828,23 +841,39 @@ prepareGraph( void)
 
 	// 周辺情報記載の開始
 	addXAxisTicks( xgridpoints, axis_ticklength, "black");
-	addXAxisLabels( xgridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
+	addXAxisLabels(
+		xgridpoints, "Arial,san-serif",
+		0.2, axis_label_fontsize, axis_ticklength
+	);
 	// Arial san-serif は、alphabetic基線がいつも0.2ズレているのか？
 	// 目盛ラベルの数値の桁数はどうなるのか。。
+	
 	addYAxisTicks( ygridpoints, axis_ticklength, "black");
-	addYAxisLabels( ygridpoints, "Arial,san-serif", 0.2, axis_label_fontsize, axis_ticklength);
-	addGraphTitle( graph_title, "Arial,san-serif", 0.2, graph_title_fontsize, outermargin);
+	addYAxisLabels(
+		ygridpoints, "Arial,san-serif",
+		0.2, axis_label_fontsize, axis_ticklength
+	);
+	
+	addGraphTitle(
+		graph_title, "Arial,san-serif",
+		0.2, graph_title_fontsize, outermargin
+	);
 	// タイトル文字列内で、"<"とかを自動でエスケープしたい。
-	addXAxisTitle( xaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
-	addYAxisTitle( yaxis_title, "Arial,san-serif", 0.2,  axis_title_fontsize, outermargin);
+	
+	addXAxisTitle(
+		xaxis_title, "Arial,san-serif",
+		0.2,  axis_title_fontsize, outermargin
+	);
+	addYAxisTitle(
+		yaxis_title, "Arial,san-serif",
+		0.2,  axis_title_fontsize, outermargin
+	);
 	drawXGridLines( xgridpoints, "silver");
 	drawYGridLines( ygridpoints, "silver");
 	// 周辺情報記載の終了
 
 	// 枠線
 	addGraphPaneFrame( "black");
-
-
 
 }
 
@@ -899,7 +928,9 @@ addGraphPaneColor( const std::string &cambuscolor)
 {
 	
 	{
-		SvgRect r( coord.actuXMin, coord.actuYMin, coord.actuWidth, coord.actuHeight);
+		SvgRect r(
+			coord.actuXMin, coord.actuYMin, coord.actuWidth, coord.actuHeight
+		);
 		r.addFill( cambuscolor);
 		r.addStroke( cambuscolor);
 		addRectActu( r);
@@ -934,7 +965,7 @@ startDrawingGraphPane( void)
 
 }
 
-// GraphPaneでの描画を終了しる。
+// GraphPaneでの描画を終了する。
 void 
 SvgGraph :: 
 endDrawingGraphPane( void)
@@ -990,7 +1021,8 @@ drawYGridLines(
 
 // 度数を示すバーを描く。
 // animted = trueのとき、下から1秒間で伸びてくるアニメーションが加わる。
-// 注：これを目盛グリッド線よりもあとに描くべし。グリッド線を「上書き」してほしいから。
+// 注：これを目盛グリッド線よりもあとに描くべし。
+// 　　グリッド線を「上書き」してほしいから。
 void 
 SvgGraph :: 
 drawBins(
@@ -1019,7 +1051,8 @@ drawBins(
 }
 
 // 散布図となる点を描く。
-// 注：これを目盛グリッド線よりもあとに描くべし。グリッド線を「上書き」してほしいから。
+// 注：これを目盛グリッド線よりもあとに描くべし。
+// 　　グリッド線を「上書き」してほしいから。
 void 
 SvgGraph :: 
 drawPoints(
@@ -1047,7 +1080,8 @@ drawPoints(
 
 // 楕円を描く。
 // rx==ryのとき、（論理座標では）真円になる。
-// 注：これを目盛グリッド線よりもあとに描くべし。グリッド線を「上書き」してほしいから。
+// 注：これを目盛グリッド線よりもあとに描くべし。
+// 　　グリッド線を「上書き」してほしいから。
 void 
 SvgGraph :: 
 drawEllipse(
@@ -1139,16 +1173,20 @@ addXAxisLabels(
 		// （指定してもdominant-baseline="alphabetic"扱いになる。）
 		
 		// 描画領域の下端から以下の余白だけ離す。
-		// alphabeticの基線は指定座標よりfontbaseだけ上なので、その分をずらしている。
-		double actuY = coord.actuYMax + ticklength + fontsize * ( 1.0 - fontbase);
-
+		// alphabeticの基線は指定座標よりfontbaseだけ上なので、
+		// その分をずらしている。
+		double actuY = 
+			coord.actuYMax + ticklength + fontsize * ( 1.0 - fontbase);
+		
 		// vの桁数はどうなるのか。。 
-
+		
 		SvgText te( actuX, actuY, v); // vはstringに変換される。
 		te.addFontfamily( fontface);
 		te.addFontsize( fontsize);
 		te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
-		te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+		te.addDominantbaseline( "alphabetic");
+		// ↑これしかIEやWordが対応していない。
+		
 		svgf.addElement( te);		
 
 	}
@@ -1182,7 +1220,9 @@ addYAxisLabels(
 		te.addFontsize( fontsize);
 		te.addTextanchor( "middle"); 
 		te.addDominantbaseline( "alphabetic"); 
-		te.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
+		te.addRotate( 270, actuX, actuY);
+		// ↑回転の中心が各点で異なるので、一括指定できない。
+		
 		svgf.addElement( te);				
 
 	}
@@ -1208,7 +1248,9 @@ addGraphTitle(
 	te.addFontfamily( fontface);
 	te.addFontsize( fontsize);
 	te.addTextanchor( "middle"); // 左右方向に中央揃えをする。
-	te.addDominantbaseline( "alphabetic"); // これしかIEやWordが対応していない。
+	te.addDominantbaseline( "alphabetic"); 
+	// ↑これしかIEやWordが対応していない。
+	
 	svgf.addElement( te);	
 
 }
@@ -1257,7 +1299,9 @@ addYAxisTitle(
 	te.addFontsize( fontsize);
 	te.addTextanchor( "middle"); 
 	te.addDominantbaseline( "alphabetic"); 
-	te.addRotate( 270, actuX, actuY); // 回転の中心が各点で異なるので、一括指定できない。
+	te.addRotate( 270, actuX, actuY);
+	// ↑回転の中心が各点で異なるので、一括指定できない。
+	
 	svgf.addElement( te);	
 
 }
@@ -1271,7 +1315,9 @@ addGraphPaneFrame(
 	const std::string color
 )
 {
-	SvgRect r( coord.actuXMin, coord.actuYMin, coord.actuWidth, coord.actuHeight);
+	SvgRect r(
+		coord.actuXMin, coord.actuYMin, coord.actuWidth, coord.actuHeight
+	);
 	r.addFillopacity( 0); // 完全透過
 	r.addStroke( color);
 	r.addStrokewidth( 1);
@@ -1520,7 +1566,7 @@ const
 
 GraphDot :: 
 GraphDot( double cx0, double cy0, double size0)
-: GraphBasicShape(), cx( cx0), cy( cy0), size( size0) // , animatorpvec()
+: GraphBasicShape(), cx( cx0), cy( cy0), size( size0)
 {}
 
 GraphDot :: 
