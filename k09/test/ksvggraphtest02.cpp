@@ -47,6 +47,7 @@ int main( int argc, char *argv[])
 	
 	cout << "ksvggraphtest02.cpp" << endl << endl;
 
+
 	cout << "Testing class SvgHistogramMaker" << endl << endl;
 
 	// preparing values
@@ -57,33 +58,44 @@ int main( int argc, char *argv[])
 		v = rne.getNormal();
 	}
 
-	// この下での作業が多すぎないか…。
-	// histmに直接vectorを入れることもできるように。
-	// histmにftを入れることもできるように。
-	// ftに入れることもできるように。
-	// →その後、stestを直す。
-
-	// making freq table
-	RecodeTable <double, int> rt;
-	rt.setAutoTableFromContVar( dvec);
-	FreqType <int, int> ft;
-	ft.setFreqFromRecodeTable( dvec, rt);
-	cout << "Resulted Frequency Table: " << endl;
-	ft.printPadding( cout);
-
-	// making histogram
-	vector <int> codes;
-	vector <int> counts;
-	vector <double> leftvec;
-	vector <double> rightvec;
-	ft.getVectors( codes, counts);
-	ft.getRangeVectors( leftvec, rightvec);
-	SvgHistogramMaker histm( leftvec, rightvec, counts);
+	// making histogram 
+	SvgHistogramMaker histm( dvec);
 	histm.setGraphTitle( "Frequency - Standard Normal Random, n = 10000");
 	histm.setXAxisTitle( "x");
 	histm.setYAxisTitle( "#Cases");
 	SvgGraph svgg = histm.createGraph();
-	svgg.writeFile( "ksvggraphtest02out.svg");
+
+	// adding element by theoretical coordinate
+	GraphLine l0( -2, 0, 2, 0);
+	l0.setStroke( "red");
+	l0.setStrokewidth( 4);
+	svgg.addElement( l0);
+
+	svgg.writeFile( "ksvggraphtest02out1.svg");
+
+
+	cout << "Testing class SvgScatterMaker" << endl << endl;
+
+	// preparing values
+	vector <double> dvec2( n);
+	for ( int i = 0; i < n; i++){
+		dvec2[ i] = dvec[ i] + rne.getNormal();
+	}
+
+	// making scatterplot
+	SvgScatterMaker scatterm( dvec, dvec2);
+	scatterm.setGraphTitle( "Scatterplot - Bivariate Normal Random, n = 10000");
+	scatterm.setXAxisTitle( "x");
+	scatterm.setYAxisTitle( "y");
+	SvgGraph svgg2 = scatterm.createGraph();
+
+	// adding element by theoretical coordinate
+	GraphLine l1( -4, -4, 6, 6);
+	l1.setStroke( "green");
+	l1.setStrokewidth( 2);
+	svgg2.addElement( l1);
+
+	svgg2.writeFile( "ksvggraphtest02out2.svg");
 
 	return 0;
 
