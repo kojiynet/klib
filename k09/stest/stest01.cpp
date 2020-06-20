@@ -159,23 +159,20 @@ int main( int, char *[])
 
 	// ヒストグラムをつくる。
 
-	vector <int> codes;
-	vector <int> counts;
-	vector <double> leftvec;
-	vector <double> rightvec;
-	ft.getVectors( codes, counts);
-	ft.getRangeVectors( leftvec, rightvec);
-
 	{
-		SvgHistogramMaker histm( leftvec, rightvec, counts);
+//		SvgHistogramMaker histm( leftvec, rightvec, counts);
+		SvgHistogramMaker histm( dvecclean);
 		histm.setGraphTitle( "Frequency - restricted to v less than 2500");
 		histm.setXAxisTitle( "Household Income");
 		histm.setYAxisTitle( "#Cases");
 		SvgGraph svgg = histm.createGraph();
 		svgg.writeFile( "stest01out01.svg");
 	}
+
+	// animation version
 	{
-		SvgHistogramMaker histm( leftvec, rightvec, counts, true); // アニメバージョン
+//		SvgHistogramMaker histm( leftvec, rightvec, counts, true); // アニメバージョン
+		SvgHistogramMaker histm( dvecclean, true); 
 		histm.setGraphTitle( "Frequency - restricted to v less than 2500");
 		histm.setXAxisTitle( "Household Income");
 		histm.setYAxisTitle( "#Cases");
