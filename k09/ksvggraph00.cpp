@@ -7,18 +7,20 @@
 	Written by Koji Yamamoto
 	Copyright (C) 2020 Koji Yamamoto
 
-	当面のTODO
-	　ksvggraphのテストを書く。
-	
+	SvgGraphの余白などのとりかたの説明を書く。
+
+	記事を書く？
+	・「いい感じの間隔」で点をとることについて？
+	・SVGの謎について？ksvg.cppに書いた。
 
 	TODO:
 	アニメーション実装でコメントアウトしているところを追加したい。
 	軸の単位の記載→優先順位は低い。
 	フォントサイズを自動調節
 
-	記事を書く？
-	・「いい感じの間隔」で点をとることについて？
-	・SVGの謎について？ksvg.cppに書いた。
+	TODO:
+	SvgHistogramMakerのコンストラクタで、
+	width,bin,startなどを指定できるようにしたい。
 
 */	
 
@@ -29,6 +31,7 @@
 #define ksvggraph_cpp_include_guard
 
 #include <k09/ksvg00.cpp>
+#include <k09/kstat02.cpp>
 
 
 /* ********** Namespace Declarations/Directives ********** */
@@ -531,6 +534,11 @@ public:
 		const std::vector <double> &lv0,
 		const std::vector <double> &rv0,
 		const std::vector <int> &c0,
+		bool an0 = false
+	);
+
+	SvgHistogramMaker(
+		const std::vector <double> &data,
 		bool an0 = false
 	);
 
@@ -1775,15 +1783,43 @@ setYAxisTitle( const std::string &s)
 
 /* ***** class SvgHistogramMaker ***** */
 
+// 階級の左端点のvector、右端点のvector、ケース数のvectorを与える。
+// an0はアニメーションにするかどうかを示す。
 SvgHistogramMaker :: 
 SvgHistogramMaker( 
 	const std::vector <double> &lv0,
 	const std::vector <double> &rv0,
 	const std::vector <int> &c0,
 	bool an0 // = false
-) : leftvec( lv0), rightvec( rv0), counts( c0), animated( an0)
+)
+: leftvec( lv0), rightvec( rv0), counts( c0), animated( an0)
 {
 	setDefaults();
+}
+
+// データのベクトルそのものを与える。
+// 階級の分け方などは自動でなされる。
+SvgHistogramMaker :: 
+SvgHistogramMaker(
+	const std::vector <double> &data,
+	bool an0 // = false
+)
+: animated( an0)
+{
+
+	RecodeTable <double, int> rt;
+	rt.setAutoTableFromContVar( data);
+
+	FreqType <int, int> ft;
+	ft.setFreqFromRecodeTable( data, rt);
+
+	vector <int> codes; // basically meaningless
+	ft.getVectors( codes, counts);
+
+	ft.getRangeVectors( leftvec, rightvec);	
+
+	setDefaults();
+
 }
 
 SvgHistogramMaker :: 
