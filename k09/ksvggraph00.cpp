@@ -32,6 +32,7 @@
 
 #include <k09/ksvg00.cpp>
 #include <k09/kstat02.cpp>
+#include <map>
 
 
 /* ********** Namespace Declarations/Directives ********** */
@@ -176,9 +177,10 @@ public:
 
 class SvgGraph { 
 
-private:
+protected:
 
 	SvgFile svgf;
+
 	Coordinates coord;
 	double svgwidth;  // width of the whole SVG
 	double svgheight; // height of the whole SVG
@@ -209,7 +211,7 @@ public:
 	~SvgGraph( void);
 
 	void setDefault( void);
-	void setDefaultCambusAndGridpoints( double, double, double, double);
+	void setDefaultCoordAndGridpoints( double, double, double, double);
 
 	void setCoordinates( const Coordinates &);
 	void setXGridPoints( const std::vector <double> &);
@@ -296,6 +298,10 @@ public:
 	void addGraphPaneFrame( const std::string);
 
 	bool writeFile( const std::string &);
+
+
+	// friend classes
+	friend class SvgHistogramMaker; 
 
 }; 
 
@@ -494,6 +500,7 @@ public:
 	virtual ~SvgGraphMakerBase( void);
 
 	void setDefaults( void);
+	void modifyMetrics( const std::map <string, double> &);
 	
 	void setGraphTitle( const std::string &s);	
 	void setXAxisTitle( const std::string &s);	
@@ -746,11 +753,11 @@ setDefault( void)
 
 }
 
-// デフォルトの方法で、CambusとX軸・Y軸の目盛の位置を決める。
+// デフォルトの方法で、CoordinatesとX軸・Y軸の目盛の位置を決める。
 // 論理座標系での、x・yの最小値・最大値を与える。
 void
 SvgGraph :: 
-setDefaultCambusAndGridpoints(
+setDefaultCoordAndGridpoints(
 	double xmin, double xmax, double ymin, double ymax
 )
 {
@@ -1761,6 +1768,35 @@ setDefaults( void)
 
 void 
 SvgGraphMakerBase :: 
+modifyMetrics( const std::map <string, double> &args)
+{
+
+	if ( args.size() < 1){
+		return;
+	}
+
+	std::map <string, double &> manip = {
+		{ "svgwidth",             svgwidth             },
+		{ "svgheight",            svgheight            },
+		{ "outermargin",          outermargin          },
+		{ "graph_title_fontsize", graph_title_fontsize },
+		{ "graph_title_margin",   graph_title_margin   },
+		{ "axis_title_fontsize",  axis_title_fontsize  },
+		{ "axis_title_margin",    axis_title_margin    },
+		{ "axis_label_fontsize",  axis_label_fontsize  },
+		{ "axis_ticklength",      axis_ticklength      }
+	};
+
+	for ( const auto p : manip){
+		if ( args.count( p.first) > 0){
+			p.second = args.at( p.first);
+		}
+	}
+
+}
+
+void 
+SvgGraphMakerBase :: 
 setGraphTitle( const std::string &s)
 {
 	graph_title = s;
@@ -1833,12 +1869,22 @@ createGraph( void)
 
 	SvgGraph svgg( svgwidth, svgheight, 0, 0, svgwidth, svgheight);
 
+	svgg.svgwidth = svgwidth;
+	svgg.svgheight = svgheight;
+	svgg.outermargin = outermargin;
+	svgg.graph_title_fontsize = graph_title_fontsize;
+	svgg.graph_title_margin = graph_title_margin;
+	svgg.axis_title_fontsize = axis_title_fontsize;
+	svgg.axis_title_margin = axis_title_margin;
+	svgg.axis_label_fontsize = axis_label_fontsize;
+	svgg.axis_ticklength = axis_ticklength;
+
 	double xmin = leftvec.front();
 	double xmax = rightvec.back();
 	double ymin = 0;
 	double ymax = *( max_element( counts.begin(), counts.end()));
 
-	svgg.setDefaultCambusAndGridpoints( xmin, xmax, ymin, ymax);
+	svgg.setDefaultCoordAndGridpoints( xmin, xmax, ymin, ymax);
 
 	svgg.setGraphTitle( graph_title);
 	svgg.setXAxisTitle( xaxis_title);
@@ -1896,7 +1942,7 @@ createGraph( void)
 	double ymin = *( yminmax.first);
 	double ymax = *( yminmax.second);
 
-	svgg.setDefaultCambusAndGridpoints( xmin, xmax, ymin, ymax);
+	svgg.setDefaultCoordAndGridpoints( xmin, xmax, ymin, ymax);
 
 	svgg.setGraphTitle( graph_title);
 	svgg.setXAxisTitle( xaxis_title);
