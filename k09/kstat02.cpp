@@ -10,6 +10,7 @@
 	Module for Statistical Computations
 	
 	k10になるときに以下の関数を消す。
+	double unbiasedVar()　→kstatboostのものを推奨。
 	double boostMean( const std::vector <double> &dv0)
 	
 	Note:
@@ -32,7 +33,7 @@
 #include <cmath>
 
 #include <k09/kutil02.cpp>
-#include <k09/kalgo01.cpp>
+#include <k09/kalgo02.cpp>
 
 
 /* ********** Using Directives ********** */
@@ -84,6 +85,7 @@ std::vector <T> omitNan( const std::vector <T> &);
 double sum( const std::vector <double> &);
 double mean( const std::vector <double> &);
 double median( const std::vector <double> &);
+double unbiasedVar( const std::vector <double> &); // 非推奨。deprecated. 
 double boostMean( const std::vector <double> &); // 非推奨。deprecated. 
 double sum( const double *, int);
 double mean( const double *, int);
@@ -434,6 +436,27 @@ double median( const std::vector <double> &dv0)
 	return ret;
 	
 }
+
+// DEPRECATED 非推奨
+// このアルゴリズムでは精度が落ちるときがあるらしい。
+// kstatboostのものを推奨する。
+// returns "unbiased" variance
+inline double unbiasedVar( const std::vector <double> &v0)
+{
+	
+	int n = v0.size();
+	
+	double m = mean( v0);
+	
+	double s2 = 0.0;
+	for ( auto &d : v0){
+		s2 += d * d;
+	}
+	
+	return ( s2 / ( double)n - m * m) * ( double)n / ( double)( n - 1);
+	
+}
+
 
 // DEPRECATED 非推奨
 // boost version of mean calculation
@@ -994,37 +1017,76 @@ const
 // Nから階級の数を設定する。Stataの方式で。
 // 最小値と最大値の幅を出して、そこから階級幅を出す。
 // 各階級は、左端点を含み、右端点を含まない。
+// 有効ケース数が1未満のとき、エラー。
+// 有効ケース数が1のとき、階級数は1。
+// 最大値と最小値の差がゼロの場合、次のように最大・最小を修正。
+// 　値がゼロなら、最小値を-1に、最大値を1にする。
+// 　値が正なら、最小値を0に、最大値をそのままにする。
+// 　値が負なら、最大値を0に、最小値をそのままにする。
 template <typename TOrigin, typename TCode>
 void 
 RecodeTable <TOrigin, TCode> :: 
 setAutoTableFromContVar( const std::vector <TOrigin> &var0)
 {
 	
+	codes.clear();
+
 	std::vector <TOrigin> vec = omitNan( var0);
-	std::sort( vec.begin(), vec.end());
-	
-	TOrigin min = *( vec.begin());
-	TOrigin max = *( vec.end() - 1);
 	int nobs = vec.size();
+	if ( nobs < 1){
+		alert( "RecodeTable :: setAutoTableFromContVar()");
+		return;
+	}
+
+	std::sort( vec.begin(), vec.end());
+	TOrigin truemin = vec.front();
+	TOrigin truemax = vec.back();
 
 	// This way to determine the number of classes is
 	// from Stata's histogram command.
-	int nclasses = std::round( std::min( std::sqrt( nobs), 10 * log10( nobs)));
+	long double log10n = log10( nobs);
+	int nclasses = std::round( std::min( ( long double)( std::sqrt( nobs)), 10.0 * log10n));
+	if ( nclasses < 1){ // This will occur when nobs==1
+		nclasses = 1;
+	}
 
-	TOrigin width = static_cast<TOrigin>( std::ceil( ( long double)( max - min) / ( long double)nclasses));
+	// Manipulation for the case where width is zero 
+	if ( ( long double)truemax - ( long double)truemin <= 0.0){
+		nclasses = 1;
+		if ( ( long double)truemin == 0.0){
+			truemin = static_cast<TOrigin>( -1.0);
+			truemax = static_cast<TOrigin>(  1.0);
+		} else {
+			if ( truemin > 0){
+				truemin = static_cast<TOrigin>(  0.0);
+			} else {
+				truemax = static_cast<TOrigin>(  0.0);
+			}
+		}
+	}
 
-	TOrigin left = min;
-	TOrigin right;
-	codes.clear();
-	for ( int i = 1; left <= max; i++, left = right){
+	// Adjustment to make sure all cases would fall inside one of ranges, 
+	// even if rounding errors occur
+	// adjmin and adjmax are rounded into values with 3-digits accuracy 
+	TOrigin truewidth = static_cast<TOrigin>(
+		( ( long double)truemax - (long double)truemin) / ( long double)nclasses
+	);
+	int log10truewidth = std::floor( log10( truewidth));
+	long double base = std::pow( 10.0, log10truewidth - 3);
+	long double adjmin = std::floor( ( long double)truemin / base - 0.5) * base;
+	long double adjmax = std::ceil( ( long double)truemax / base + 0.5) * base;
+	long double adjwidth = ( adjmax - adjmin) / ( long double)nclasses;
 
-		right = left + width;
+	for ( int i = 0; i < nclasses; i++){
+
+		TOrigin left  = adjmin + adjwidth * ( long double)i; 
+		TOrigin right = adjmin + adjwidth * ( long double)( i + 1);
 
 		CodeType ct = 
 			CodeType (
 				left, true,
 				right, false,
-				i
+				i + 1
 			);
 		
 		codes.push_back( ct);
