@@ -48,7 +48,7 @@ getBetaQ(
 
 void 
 getBetaRandomVec(
-	std::vector <double> &, RandomNumberEngine &, int, double, double
+	std::vector <double> &, RandomNumberEngine &, int, double, double, bool = false
 );
 
 
@@ -121,13 +121,16 @@ std::function <double(double)> getBetaQ( double mean0, double var0)
 }
 
 // returns vector of random numbers from targeted Beta distribution 
+// if withProgress == true then this calls getDistRandomVecWithProgress()
+// which will report progress 
 void
 getBetaRandomVec(
 	std::vector <double> &ret,
 	RandomNumberEngine &rne,
 	int len,
 	double mean0,
-	double var0
+	double var0,
+	bool withProgress // = false 
 )
 {
 
@@ -135,7 +138,11 @@ getBetaRandomVec(
 
 	auto qfunc = getBetaQ( mean0, var0);
 	
-	ret = rne.getDistRandomVec( len, qfunc);
+	if ( withProgress == true){
+		ret = rne.getDistRandomVecWithProgress( len, qfunc);
+	} else {
+		ret = rne.getDistRandomVec( len, qfunc);
+	}
 
 }
 

@@ -18,6 +18,8 @@
 
 #include <random>
 #include <cstdint>
+#include <boost/thread/thread.hpp>
+#include <boost/chrono/chrono.hpp>
 #include <k09/kutil02.cpp>
 
 
@@ -69,7 +71,8 @@ public:
 
 	std::vector <double> getRealUniformSeq( int, double = 0.0, double = 1.0);
 
-	std::vector <double> getDistRandomVec( int, std::function <double( double)>, std::function <void( int, int)> = []( int, int){});
+	std::vector <double> getDistRandomVec( int, std::function <double( double)>);
+	std::vector <double> getDistRandomVecWithProgress( int, std::function <double( double)>);
 	
 	friend class RandomDiscreteUniform;
 	
@@ -269,24 +272,105 @@ getRealUniformSeq( int n, double min, double max)
 	
 }
 
-// ↓修正中。
 // returns vector of random numbers from the distribution, 
 // whose inv of cumulative prob func is given by "quantile" 
 // the size of vector will be n
-// func "observer" will be working in another thread 
-// while this function is working; default is emply func
 // return value will be moved 
 std::vector <double> 
 RandomNumberEngine :: 
-getDistRandomVec( int n, std::function <double( double)> quantile, std::function <void( int, int)> observer)
+getDistRandomVec( int n, std::function <double( double)> quantile)
 {
 	
 	std::vector <double> ret( n);
-
+	
 	for ( int i = 0; i < n; i++){
 		double p = getRealUniform();
 		ret[ i] = quantile( p);
 	}
+	
+	return std::move( ret);
+	
+}
+
+// returns vector of random numbers from the distribution, 
+// whose inv of cumulative prob func is given by "quantile" 
+// the size of vector will be n
+// print to std::cout the progress 
+// return value will be moved 
+std::vector <double> 
+RandomNumberEngine :: 
+getDistRandomVecWithProgress( int n, std::function <double( double)> quantile)
+{
+	
+	std::vector <double> ret( n);
+	int i = 0;
+	bool isWorking = true;
+	boost::mutex mtx;
+	
+	auto obsFunc = [&](){
+		
+		int j = 0;
+		
+		while ( isWorking){
+			
+			if ( j < 10){
+				
+				boost::this_thread::sleep_for( boost::chrono::milliseconds( 100));
+				
+				{
+					boost::lock_guard <boost::mutex> guard( mtx);
+					std::cout << ".";
+				}
+				
+				j++;
+				
+			} else {
+			
+				{
+					boost::lock_guard <boost::mutex> guard( mtx);
+					std::cout << " " << i << "/" << n << " ";
+				}
+				
+				j = 0;
+				
+			}
+			
+		}
+		
+	};
+	
+	boost::thread obsThread( obsFunc);
+	
+	for ( i = 0; i < n; ){
+		double p = getRealUniform();
+		ret[ i] = quantile( p);
+		
+		{
+			boost::lock_guard <boost::mutex> guard( mtx);
+			i++;
+		}
+		
+	}
+	
+	isWorking = false;
+	
+	bool joined = false;
+	do {
+		
+		joined = obsThread.try_join_for( boost::chrono::milliseconds( 3000));
+		
+		if ( joined == false){
+			
+			{
+				boost::lock_guard <boost::mutex> guard( mtx);
+				std::cout << " ...tried to join but failed... ";
+			}
+			
+		}
+		
+	} while ( joined == false);
+	
+	std::cout << " done." << std::endl;
 	
 	return std::move( ret);
 	
