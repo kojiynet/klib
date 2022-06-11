@@ -1,6 +1,6 @@
 
 /*
-	ksimpledataset
+	ksimpleds
 	Ver. k09.00
 	
 	Written by Koji Yamamoto
@@ -325,7 +325,10 @@ public:
 		std::function < bool( std::function <double(std::string)> ) > func0
 	)
 	{
-
+		
+		// この中で、変数名とindexの対応のmapをつくり、accessorもつくっておけば、もっと速くなりそう。
+		// →やってみたが、むしろ遅くなった。。。
+		
 		auto [ b, idx] = getColumnIndex( vn0);
 		if ( b == false){
 			throwMsgExcept( "", "variable not found: " + vn0);
