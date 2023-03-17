@@ -17,7 +17,10 @@
 	TODO:
 
 	結果の正確性を確認
-	　→確認中。「確認中.ods」で。確認できたところに色を塗っている。
+	→確認できた。
+
+	SAとMAを同時に変換できるようにしたい。
+	
 	Datasetと変数名を与える方法でもできるようにしたい。
 
 */
@@ -56,7 +59,7 @@ int main( int, char *[]);
 
 // 特定の変数に対する変換ルールを示すクラス
 // SA変数用
-class RepRule {
+class SARepRule {
 public:
 
 	// もとの変数名
@@ -72,7 +75,7 @@ public:
 
 	// 以下、変換できなかったときに使うフィールド
 
-	// vname_destinに対して、変換できなかった文字列に対応させて入れる値（デフォルトでは空）
+	// mapにない文字列に対する変換結果となる値（デフォルトでは空）
 	std::string str_for_unfound = "";
 
 	// 変換できなかった文字列を入れる変数名（これが空の場合には変数をつくらない）
@@ -81,14 +84,15 @@ public:
 
 	// ***** Methods *****
 
-	RepRule( void)
-		: vname_origin(), vname_destin(), mapobj() 
-		{}
+	SARepRule( void)
+	: vname_origin(), vname_destin(), mapobj() 
+	{}
 
-	RepRule( const std::string vn_ori0, const std::string vn_des0)
-		: vname_origin( vn_ori0), vname_destin( vn_des0), mapobj()
-		{}
+	SARepRule( const std::string vn_ori0, const std::string vn_des0)
+	: vname_origin( vn_ori0), vname_destin( vn_des0), mapobj()
+	{}
 	
+	// 対応関係を追加する。
 	// もとの文字列についてダブりをチェックする。
 	// あとから現れたルールは無視する。
 	void addPair( const std::string &old0, const std::string &new0)
@@ -97,7 +101,7 @@ public:
 		auto it = mapobj.find( old0);
 		if ( it != mapobj.end()){
 			alert(
-				"RepRule::addPair()",
+				"SARepRule::addPair()",
 				"For variable " + vname_origin + ", "
 				"string " + old0 + " appeared more than once. "
 				"Later ones are ignored."
@@ -109,6 +113,7 @@ public:
 
 	}
 
+	// 変換後文字列を得る。
 	std::pair <bool, std::string> getReplaced( const std::string &old0) const
 	{
 		auto it = mapobj.find( old0);
@@ -118,6 +123,7 @@ public:
 		return { false, std::string()};
 	}
 
+	// 出力する。
 	void print( void)
 	{
 		std::cout << vname_origin << " TO " << vname_destin << std::endl;
@@ -130,16 +136,16 @@ public:
 
 };
 
-// 変換ルールRepRuleの集合。変数群（データセット）にまとめて適用する意図のもの。
-class RepRuleSet {
+// 変換ルールSARepRuleの集合。変数群（データセット）にまとめて適用する意図のもの。
+class SARepRuleSet {
 public:
 
 	// 変換ルール群
-	std::vector <RepRule> rulevec;
+	std::vector <SARepRule> rulevec;
 
-	RepRuleSet( void) : rulevec(){}
+	SARepRuleSet( void) : rulevec(){}
 
-	RepRuleSet( 
+	SARepRuleSet( 
 		const std::vector <std::string> &vn_ori0,
 		const std::vector <std::string> &old0,
 		const std::vector <std::string> &new0,
@@ -166,7 +172,7 @@ public:
 			if ( true == b){
 				rulevec[ idx].addPair( old0[ i], new0[ i]);
 			} else {
-				RepRule r{ vn_ori0[ i], vn_des0[ i]};
+				SARepRule r{ vn_ori0[ i], vn_des0[ i]};
 				r.addPair( old0[ i], new0[ i]);
 				rulevec.push_back(  r);
 			}
@@ -578,6 +584,7 @@ int main( int argc, char *argv[])
 	const string fn_input = "qa22a_02_input.csv";
 	const string fn_codes_sa = "qa22a_02_codes_sa.csv";
 	const string fn_codes_ma = "qa22a_02_codes_ma.csv";
+	const string fn_output = "qa22a_02_out.txt";
 
 	Dataset ds_input;
 	Dataset ds_codes_sa;
@@ -619,7 +626,7 @@ int main( int argc, char *argv[])
 	ds_codes_sa.getStringVector( sa_newvec, "code");
 
 	// 文字列vector群からルールのインスタンスを生成
-	RepRuleSet sa_ruleset( sa_varvec, sa_oldvec, sa_newvec, sa_varvec);
+	SARepRuleSet sa_ruleset( sa_varvec, sa_oldvec, sa_newvec, sa_varvec);
 
 	// 変換できなかった文字列に対応させてvname_destinに入れる値を一括指定
 	sa_ruleset.setDestinStrForUnfound( "9999");
@@ -672,9 +679,73 @@ int main( int argc, char *argv[])
 	Dataset ds_output_all = sa_ds_output;
 	ds_output_all.mergeDataset( ma_ds_output);
 
-	koutputfile kof( "qa22a_02_out.txt");
+	koutputfile kof( fn_output);
 	kof.open( false, false, true);
 	ds_output_all.writeFile( kof, "\t");
+
+
+
+
+	// ********************
+	// SAとMAをまとめて変換する
+
+	// 以下未実装
+	class RepRuleSet {
+	public:
+
+		void addSARepRules(
+			const std::vector <std::string> &vn_ori0,
+			const std::vector <std::string> &old0,
+			const std::vector <std::string> &new0,
+			const std::vector <std::string> &vn_des0
+		);
+
+		void setSADestinStrForUnfound( const std::string &s0);
+
+		void setSAVnSuffixForUnfound( const std::string &suf0);
+
+		void addMARepRules( 
+			const std::vector <std::string> &vn_ori0,
+			const std::vector <std::string> &old0,
+			const std::vector <std::string> &vn_dummy0,
+			const std::string &de0
+		);
+
+		void setMAVnSuffixForUnfound( const std::string &suf0);
+
+		Dataset apply( const Dataset &ds0);
+
+		void print( void);
+
+	};
+
+	RepRuleSet reprules;
+
+	/*
+
+	// SAのルールを追加
+	reprules.addSARepRules( sa_varvec, sa_oldvec, sa_newvec, sa_varvec);
+	// 変換できなかった文字列に対応させてvname_destinに入れる値を一括指定
+	reprules.setSADestinStrForUnfound( "9999");
+	// 変換できなかった文字列を入れる変数名につけるsuffixを一括指定（vname_denstinにつける）
+	reprules.setSAVnSuffixForUnfound( "_other");
+
+	// MAのルールを追加
+	reprules.addMARepRules( ma_varvec, ma_oldvec, ma_dummyvarvec, ";");
+	// 変換できなかった文字列を入れる変数名につけるsuffixを一括指定（vname_originにつける）
+	reprules.setMAVnSuffixForUnfound( "_other");
+
+	// ルールの確認
+	reprules.print();
+
+	// ルールの適用
+	Dataset ds_output_test = reprules.apply( ds_input);
+
+	// 結果の表示
+	ds_output_test.print();
+
+	*/
+
 
 
 	return 0;
