@@ -16,10 +16,13 @@
 
 	TODO:
 
-	結果の正確性を確認
-	→確認できた。
+	☑結果の正確性を確認
+	　→確認できた。
 
 	SAとMAを同時に変換できるようにしたい。
+	→できた。結果は同じ。出力の変数の順番が違うだけ。
+	→以前のやり方を消す（SARepRuleSet, MARepRuleSet）
+	※RepRuleSetは異種リストっぽくなっている？
 	
 	Datasetと変数名を与える方法でもできるようにしたい。
 
@@ -32,6 +35,7 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <variant>
 #include <k09/kutil02.cpp>
 #include <k09/kinputfile01.cpp>
 #include <k09/koutputfile01.cpp>
@@ -123,8 +127,46 @@ public:
 		return { false, std::string()};
 	}
 
+	// 文字列のベクタを変換する。
+	// 結果をDatasetに入れて返す。
+	// 必要なら変換できなかった文字列の変数もつくる。
+	Dataset apply( const std::vector <std::string> strvec0) const
+	{
+
+		Dataset ret;
+
+		std::vector <std::string> resultvec;
+		std::vector <std::string> resultvec_unfound;
+		bool unfound_exist = false;
+
+		for ( const std::string &s0 : strvec0){
+
+			auto [ b, replaced] = getReplaced( s0);
+			std::string replaced_unfound = "";
+
+			if ( b == false){
+				replaced = str_for_unfound;
+				replaced_unfound = s0;
+				unfound_exist = true;
+			}
+
+			resultvec.push_back( replaced);
+			resultvec_unfound.push_back( replaced_unfound);
+
+		}
+
+		ret.addColumn( vname_destin, resultvec);
+		// 変換できなかった文字列があれば、その文字列を入れた変数も結果に追加
+		if ( unfound_exist == true){
+			ret.addColumn( vname_for_unfound, resultvec_unfound);
+		}
+
+		return ret;
+
+	}
+
 	// 出力する。
-	void print( void)
+	void print( void) const
 	{
 		std::cout << vname_origin << " TO " << vname_destin << std::endl;
 		for ( const auto m0 : mapobj){
@@ -352,7 +394,84 @@ public:
 		return { false, std::string()};
 	}
 
-	void print( void)
+	// 文字列のベクタを変換する。
+	// 結果をDatasetに入れて返す。
+	// 必要なら変換できなかった文字列の変数もつくる。
+	Dataset apply( const std::vector <std::string> strvec0) const
+	{
+
+		Dataset ret;
+
+		int ncase = strvec0.size();
+
+		std::vector <std::string> strs_toadd( ncase, "0");
+
+		// 変換後のダミー変数群を準備。
+		// ここでは追加順を保持しているdummyvarnamesを使う。
+		for ( const auto &dvn0 : dummyvarnames){
+			ret.addColumn( dvn0, strs_toadd);
+		}
+
+		bool ignore_unfound = false;
+		if ( vname_for_unfound.size() < 1){
+			ignore_unfound = true;
+		}
+		bool unfound_exist = false;
+		std::vector <std::string> strvec_unfound( ncase);
+
+		// 元の変数を1ケースずつ処理
+
+		for ( int caseid = 0; caseid < ncase; ++caseid){
+
+			const std::string &s0 = strvec0[ caseid];
+
+			// 複数挙げられている場合があるのでそれをバラす。
+			std::vector <std::string> altvec;
+			tokenize( altvec, s0, delimiter);
+
+			if ( altvec.size() < 1){
+				continue;
+			}
+
+			for ( const std::string &t0 : altvec){
+
+				if ( t0.size() < 1){
+					continue;
+				}
+
+				// ダミー変数名を特定する。
+				// 該当しない文字列の場合はそれ用の変数に入れる。
+				auto [ b, dummyvn] = getDummyVarName( t0);
+				if ( b == false){
+
+					if ( ignore_unfound == true){
+						std::string msg = "Unexpected string encountered; string = \"" + vname_origin;
+						alert( "", msg);
+						continue;
+					} else {
+						unfound_exist = true;
+						strvec_unfound[ caseid] = t0;
+					}
+
+				} else {
+
+					ret.setValue( dummyvn, caseid, "1");
+
+				}
+
+			}
+
+		}
+
+		if ( unfound_exist == true){
+			ret.addColumn( vname_for_unfound, strvec_unfound);
+		}
+
+		return ret;
+
+	}
+
+	void print( void) const
 	{
 		std::cout << vname_origin << std::endl;
 		for ( const auto m0 : mapobj){
@@ -689,39 +808,175 @@ int main( int argc, char *argv[])
 	// ********************
 	// SAとMAをまとめて変換する
 
-	// 以下未実装
+	std::cout << "MATOMETE" << std::endl;
+
 	class RepRuleSet {
 	public:
+
+		// SAでもMAでも入れられるルール群のvector
+		std::vector < std::variant <SARepRule, MARepRule> > rulevec;
+
+		RepRuleSet( void) : rulevec(){}
 
 		void addSARepRules(
 			const std::vector <std::string> &vn_ori0,
 			const std::vector <std::string> &old0,
 			const std::vector <std::string> &new0,
 			const std::vector <std::string> &vn_des0
-		);
+		)
+		{
+			int ncase = vn_ori0.size();
+			if ( ncase != old0.size() || ncase != new0.size() || ncase != vn_des0.size()){
+				alert( "Vectors' lengths are not the same; nothing was done");
+				return;
+			}
+			for ( int i = 0; i < ncase; ++i){
+				auto [ b, idx] = getIndexByOriginVar( vn_ori0[ i]);
+				if ( true == b){
+					// rulevec[ idx]がSAのルールかMAのルールかによって分岐
+					if ( std::holds_alternative<SARepRule>( rulevec[ idx])){
+						std::get<SARepRule>( rulevec[ idx]).addPair( old0[ i], new0[ i]);
+					} else {
+						alert( "Variable \""s + "\" is defined both as MA and SA variable");
+						continue;
+					}
+				} else {
+					SARepRule rule0{ vn_ori0[ i], vn_des0[ i]};
+					rule0.addPair( old0[ i], new0[ i]);
+					rulevec.push_back( rule0);
+				}
+			}
+		}
 
-		void setSADestinStrForUnfound( const std::string &s0);
+		std::pair <bool, int> getIndexByOriginVar( const std::string &vn0)
+		{
+			for ( int i = 0; i < rulevec.size(); ++i){
+				std::string vname_origin
+					= std::visit(
+						[]( const auto &r0){ return r0.vname_origin;},
+						rulevec[ i]
+					);
+				if ( vname_origin == vn0){
+					return { true, i};
+				}
+			}
+			return { false, -1};
+		}
 
-		void setSAVnSuffixForUnfound( const std::string &suf0);
+		void setSADestinStrForUnfound( const std::string &s0)
+		{
+			for ( auto &r0 : rulevec){
+				if ( std::holds_alternative<SARepRule>( r0)){
+					std::get<SARepRule>( r0).str_for_unfound = s0;
+				}
+			}
+		}
+
+		void setSAVnSuffixForUnfound( const std::string &suf0)
+		{
+			for ( auto &r0 : rulevec){
+				if ( std::holds_alternative<SARepRule>( r0)){
+					auto &sarule0 = std::get<SARepRule>( r0);
+					sarule0.vname_for_unfound = sarule0.vname_destin + suf0;
+				}
+			}
+		}
 
 		void addMARepRules( 
 			const std::vector <std::string> &vn_ori0,
 			const std::vector <std::string> &old0,
 			const std::vector <std::string> &vn_dummy0,
 			const std::string &de0
-		);
+		)
+		{
 
-		void setMAVnSuffixForUnfound( const std::string &suf0);
+			int ncase = vn_ori0.size();
+			if ( ncase != old0.size() || ncase != vn_dummy0.size()){
+				alert( "Vectors' lengths are not the same; nothing was done");
+				return;
+			}
+			for ( int i = 0; i < ncase; ++i){
+				auto [ b, idx] = getIndexByOriginVar( vn_ori0[ i]);
+				if ( true == b){
+					// rulevec[ idx]がMAのルールかSAのルールかによって分岐
+					if ( std::holds_alternative<MARepRule>( rulevec[ idx])){
+						std::get<MARepRule>( rulevec[ idx]).addPair( old0[ i], vn_dummy0[ i]);
+					} else {
+						alert( "Variable \""s + "\" is defined both as MA and SA variable");
+						continue;
+					}
+				} else {
+					MARepRule rule0{ vn_ori0[ i]};
+					rule0.addPair( old0[ i], vn_dummy0[ i]);
+					rule0.delimiter = de0;
+					rulevec.push_back( rule0);
+				}
+			}
 
-		Dataset apply( const Dataset &ds0);
+		}
 
-		void print( void);
+		void setMAVnSuffixForUnfound( const std::string &suf0)
+		{
+			for ( auto &r0 : rulevec){
+				if ( std::holds_alternative<MARepRule>( r0)){
+					auto &marule0 = std::get<MARepRule>( r0);
+					marule0.vname_for_unfound = marule0.vname_origin + suf0;
+				}
+			}
+		}
+
+		// ds0というデータセットにルールを
+		// 適用した結果得られたデータセットを返す。
+		// そもそもルールのない変数については何も出力されない。
+		Dataset apply( const Dataset &ds0)
+		{
+
+			Dataset ret;
+
+			std::vector <std::string> datavarnames = ds0.getVarNames();
+
+			for ( const auto &dvn0 : datavarnames){
+
+				auto [ b, idx] = getIndexByOriginVar( dvn0);
+
+				if ( b == true){
+
+					std::vector <std::string> rawstrvec;
+					ds0.getStringVector( rawstrvec, dvn0);
+
+					Dataset tempresult = 
+						std::visit(
+							[&]( const auto &v){ return v.apply( rawstrvec); },
+							rulevec[ idx]
+						);
+
+					ret.mergeDataset( tempresult);
+
+				} else {
+
+					// do nothing
+
+				}
+
+			}
+
+			return ret;
+
+		}
+
+		void print( void)
+		{
+			for ( const auto &r0 : rulevec){
+				std::visit(
+					[]( const auto &v){ v.print();},
+					r0
+				);
+			}
+		}
 
 	};
 
 	RepRuleSet reprules;
-
-	/*
 
 	// SAのルールを追加
 	reprules.addSARepRules( sa_varvec, sa_oldvec, sa_newvec, sa_varvec);
@@ -744,7 +999,11 @@ int main( int argc, char *argv[])
 	// 結果の表示
 	ds_output_test.print();
 
-	*/
+	// ファイルに出力
+	std::string fn_output_test = "qa22a_02pend_out_test.txt";
+	koutputfile kof_test( fn_output_test);
+	kof_test.open( false, false, true);
+	ds_output_test.writeFile( kof_test, "\t");
 
 
 
