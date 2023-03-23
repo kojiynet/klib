@@ -19,11 +19,12 @@
 	☑結果の正確性を確認
 	　→確認できた。
 
-	☑SAとMAを同時に変換できるようにしたい。
-	　☑できた。結果は同じ。出力の変数の順番が違うだけ。
-	　☑以前のやり方を消す（SARepRuleSet, MARepRuleSet）
+	☑Datasetと変数名を与える方法でもできるようにしたい。
+
+	□コメントで説明を書く。
+	□ヘッダとして独立させる。
+	□exampleをつくっておく。
 	
-	Datasetと変数名を与える方法でもできるようにしたい。
 
 */
 
@@ -349,8 +350,8 @@ public:
 	void addSARepRules(
 		const std::vector <std::string> &vn_ori0,
 		const std::vector <std::string> &old0,
-		const std::vector <std::string> &new0,
-		const std::vector <std::string> &vn_des0
+		const std::vector <std::string> &vn_des0,
+		const std::vector <std::string> &new0
 	)
 	{
 		int ncase = vn_ori0.size();
@@ -453,9 +454,60 @@ public:
 		}
 	}
 
-	// ds0というデータセットにルールを
-	// 適用した結果得られたデータセットを返す。
-	// そもそもルールのない変数については何も出力されない。
+	// Datasetオブジェクトを与えて、その変数からSAルールを追加する。
+	void addSARepRules(
+		const Dataset &ds0,
+		const std::string &orivn0, 
+		const std::string &oldstrvn0, 
+		const std::string &desvn0, 
+		const std::string &newstrvn0
+	)
+	{
+		
+		using namespace std; 
+
+		vector <string> orivarvec;
+		vector <string> oldvec;
+		vector <string> desvarvec;
+		vector <string> newvec;
+
+		ds0.getStringVector( orivarvec, orivn0);
+		ds0.getStringVector( oldvec, oldstrvn0);
+		ds0.getStringVector( desvarvec, desvn0);
+		ds0.getStringVector( newvec, newstrvn0);
+
+		addSARepRules( orivarvec, oldvec, desvarvec, newvec);
+
+	}
+
+	// Datasetオブジェクトを与えて、その変数からMAルールを追加する。
+	void addMARepRules( 
+		const Dataset ds0,
+		const std::string &orivn0,
+		const std::string &oldstrvn0,
+		const std::string &desvn0,
+		const std::string &de0
+	)
+	{
+
+		using namespace std; 
+
+		vector <string> orivarvec;
+		vector <string> oldvec;
+		vector <string> desvarvec;
+
+		ds0.getStringVector( orivarvec, orivn0);
+		ds0.getStringVector( oldvec, oldstrvn0);
+		ds0.getStringVector( desvarvec, desvn0);
+
+		addMARepRules( orivarvec, oldvec, desvarvec, de0);
+
+	}
+
+
+	// ds0というデータセットにルールを適用し、
+	// 結果として得られたデータセットを返す。
+	// そもそもルールのない変数については何も出力しない。
 	Dataset apply( const Dataset &ds0)
 	{
 
@@ -578,7 +630,7 @@ int main( int argc, char *argv[])
 	RepRuleSet reprules;
 
 	// SAのルールを追加
-	reprules.addSARepRules( sa_varvec, sa_oldvec, sa_newvec, sa_varvec);
+	reprules.addSARepRules( sa_varvec, sa_oldvec, sa_varvec, sa_newvec);
 	// 変換できなかった文字列に対応させてvname_destinに入れる値を一括指定
 	reprules.setSADestinStrForUnfound( "9999");
 	// 変換できなかった文字列を入れる変数名につけるsuffixを一括指定（vname_denstinにつける）
@@ -603,6 +655,45 @@ int main( int argc, char *argv[])
 	kof.open( false, false, true);
 	ds_output.writeFile( kof, "\t");
 
+
+	// ********************
+	// Datasetから直接ルールを生成しようとしてみる
+
+	RepRuleSet reprules_test;
+
+	// SAのルールを追加
+	reprules_test.addSARepRules(
+		ds_codes_sa,
+		"var", "string", "var", "code"
+	);
+	// 変換できなかった文字列に対応させてvname_destinに入れる値を一括指定
+	reprules_test.setSADestinStrForUnfound( "9999");
+	// 変換できなかった文字列を入れる変数名につけるsuffixを一括指定（vname_denstinにつける）
+	reprules_test.setSAVnSuffixForUnfound( "_other");
+
+	// MAのルールを追加
+	reprules_test.addMARepRules( 
+		ds_codes_ma,
+		"var", "string", "newvar",
+		";"
+	);
+	// 変換できなかった文字列を入れる変数名につけるsuffixを一括指定（vname_originにつける）
+	reprules_test.setMAVnSuffixForUnfound( "_other");
+
+	// ルールの確認
+	reprules_test.print();
+
+	// ルールの適用
+	Dataset ds_output_test = reprules_test.apply( ds_input);
+
+	// 結果の表示
+	ds_output_test.print();
+
+	// ファイルに出力
+	const string fn_output_test = "qa22a_02_out_test.txt";
+	koutputfile kof_test( fn_output_test);
+	kof_test.open( false, false, true);
+	ds_output_test.writeFile( kof_test, "\t");
 
 	return 0;
 
