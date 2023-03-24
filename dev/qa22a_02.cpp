@@ -21,7 +21,7 @@
 
 	☑Datasetと変数名を与える方法でもできるようにしたい。
 
-	□コメントで説明を書く。
+	☑コメントで説明を書く。
 	□ヘッダとして独立させる。
 	□exampleをつくっておく。
 	
@@ -88,10 +88,12 @@ public:
 
 	// ***** Methods *****
 
+	// デフォルトコンストラクタ
 	SARepRule( void)
 	: vname_origin(), vname_destin(), mapobj() 
 	{}
 
+	// もとの変数名と変換後の変数名を引数にとるコンストラクタ
 	SARepRule( const std::string vn_ori0, const std::string vn_des0)
 	: vname_origin( vn_ori0), vname_destin( vn_des0), mapobj()
 	{}
@@ -165,7 +167,7 @@ public:
 
 	}
 
-	// 出力する。
+	// ルールの内容をstd::coutに出力する。
 	void print( void) const
 	{
 		std::cout << vname_origin << " TO " << vname_destin << std::endl;
@@ -207,20 +209,25 @@ public:
 	// 変換できなかった文字列を入れる変数名（これが空の場合には変数をつくらない）
 	std::string vname_for_unfound = "";
 
+
 	// ***** Methods *****
 
+	// デフォルトコンストラクタ
 	MARepRule( void) : vname_origin(), mapobj(), dummyvarnames()
 	{}
 
+	// もとの変数名を引数にもつコンストラクタ
 	MARepRule( const std::string &vn_ori0) : vname_origin( vn_ori0), mapobj(), dummyvarnames()
 	{}
 	
+	// もとの変数名と区切り文字集合を引数にもつコンストラクタ
 	MARepRule( const std::string &vn_ori0, const std::string &de0)
 	: vname_origin( vn_ori0), mapobj(), dummyvarnames(), delimiter( de0)
 	{}
 	
+	// もとの文字列と変換後の変数名との対応を追加する。
 	// もとの文字列についてダブりをチェックする。
-	// あとから現れたルールは無視する。
+	// ダブっていた場合、あとから現れたルールは無視する。
 	void addPair( const std::string &old0, const std::string &vn_dummy0)
 	{
 
@@ -240,6 +247,7 @@ public:
 
 	}
 
+	// もとの文字列から、対応するダミー変数名を得る。
 	std::pair <bool, std::string> getDummyVarName( const std::string &old0) const
 	{
 		auto it = mapobj.find( old0);
@@ -326,6 +334,7 @@ public:
 
 	}
 
+	// ルールの内容をstd::coutに出力する。
 	void print( void) const
 	{
 		std::cout << vname_origin << std::endl;
@@ -337,16 +346,29 @@ public:
 
 };
 
-
-// SAでもMAでも入れられるルール群
+// ルール群を入れるクラス
+// SAでもMAでも入れられる。
 class RepRuleSet {
 public:
 
 	// SAでもMAでも入れられるルール群のvector
+	// 1つの要素が1つの変換前変数にかかるルールを示す。
 	std::vector < std::variant <SARepRule, MARepRule> > rulevec;
 
+	// デフォルトコンストラクタ
 	RepRuleSet( void) : rulevec(){}
 
+	// SAの変換ルール群を追加する。
+	// 以下の内容が入ったvectorを渡す。
+	// 　vn_ori0 変換前の変数名
+	// 　old0    変換される文字列
+	// 　vn_des0 変換後の変数名
+	// 　new0    変換後の文字列
+	// つまり
+	// 「vn_ori0にold0が入っていたら、vn_des0にnew0を入れる」
+	// という対応を示す。
+	// 通常、1つのvn_ori0に1つのvn_des0が対応し、
+	// その中で複数のold0とnew0の対応が存在する。
 	void addSARepRules(
 		const std::vector <std::string> &vn_ori0,
 		const std::vector <std::string> &old0,
@@ -377,11 +399,14 @@ public:
 		}
 	}
 
+	// rulevecにあるルールから、
+	// 変換前の変数名としてvn0とマッチするものを探し、
+	// そのインデックスを返す。
 	std::pair <bool, int> getIndexByOriginVar( const std::string &vn0)
 	{
 		for ( int i = 0; i < rulevec.size(); ++i){
-			std::string vname_origin
-				= std::visit(
+			std::string vname_origin = 
+				std::visit(
 					[]( const auto &r0){ return r0.vname_origin;},
 					rulevec[ i]
 				);
@@ -392,6 +417,8 @@ public:
 		return { false, -1};
 	}
 
+	// SAのルールについて、
+	// ルールにない文字列に対する変換結果となる値を一括で指定する。
 	void setSADestinStrForUnfound( const std::string &s0)
 	{
 		for ( auto &r0 : rulevec){
@@ -401,6 +428,11 @@ public:
 		}
 	}
 
+	// SAのルールについて、
+	// ルールにない文字列を入れる変数名につけるサフィックスを一括で指定する。
+	// ルールにない文字列を入れる変数名は、
+	// 　変換後変数名＋サフィックス
+	// という名称になる。
 	void setSAVnSuffixForUnfound( const std::string &suf0)
 	{
 		for ( auto &r0 : rulevec){
@@ -411,6 +443,15 @@ public:
 		}
 	}
 
+	// MAの変換ルール群を追加する。
+	// 以下の内容が入ったvectorを渡す。
+	// 　vn_ori0   変換前の変数名
+	// 　old0      変換される文字列
+	// 　vn_dummy0 変換後のダミー変数名
+	// 　de0       文字列をトークナイズする際の区切り文字集合
+	// つまり
+	// 「vn_ori0の内容をde0でトークナイズする。得られた文字列に、old0があれば、vn_dummy0に1を入れる」
+	// という対応を示す。
 	void addMARepRules( 
 		const std::vector <std::string> &vn_ori0,
 		const std::vector <std::string> &old0,
@@ -444,6 +485,11 @@ public:
 
 	}
 
+	// MAのルールについて、
+	// ルールにない文字列を入れる変数名につけるサフィックスを一括で指定する。
+	// ルールにない文字列を入れる変数名は、
+	// 　変換前変数名＋サフィックス
+	// という名称になる。
 	void setMAVnSuffixForUnfound( const std::string &suf0)
 	{
 		for ( auto &r0 : rulevec){
@@ -455,55 +501,64 @@ public:
 	}
 
 	// Datasetオブジェクトを与えて、その変数からSAルールを追加する。
+	// 以下のようにDatasetオブジェクト内の変数名を指定する。
+	// 　vn_vn_ori0 変換前の変数名　の入っている変数名
+	// 　vn_old0    変換される文字列　の入っている変数名
+	// 　vn_vn_des0 変換後の変数名　の入っている変数名
+	// 　vn_new0    変換後の文字列	の入っている変数名
 	void addSARepRules(
 		const Dataset &ds0,
-		const std::string &orivn0, 
-		const std::string &oldstrvn0, 
-		const std::string &desvn0, 
-		const std::string &newstrvn0
+		const std::string &vn_vn_ori0, 
+		const std::string &vn_old0, 
+		const std::string &vn_vn_des0, 
+		const std::string &vn_new0
 	)
 	{
 		
 		using namespace std; 
 
-		vector <string> orivarvec;
-		vector <string> oldvec;
-		vector <string> desvarvec;
-		vector <string> newvec;
+		vector <string> vn_ori_vec;
+		vector <string> old_vec;
+		vector <string> vn_des_vec;
+		vector <string> new_vec;
 
-		ds0.getStringVector( orivarvec, orivn0);
-		ds0.getStringVector( oldvec, oldstrvn0);
-		ds0.getStringVector( desvarvec, desvn0);
-		ds0.getStringVector( newvec, newstrvn0);
+		ds0.getStringVector( vn_ori_vec, vn_vn_ori0);
+		ds0.getStringVector( old_vec, vn_old0);
+		ds0.getStringVector( vn_des_vec, vn_vn_des0);
+		ds0.getStringVector( new_vec, vn_new0);
 
-		addSARepRules( orivarvec, oldvec, desvarvec, newvec);
+		addSARepRules( vn_ori_vec, old_vec, vn_des_vec, new_vec);
 
 	}
 
 	// Datasetオブジェクトを与えて、その変数からMAルールを追加する。
+	// 以下のようにDatasetオブジェクト内の変数名を指定する。
+	// 　vn_vn_ori0   変換前の変数名　の入っている変数名
+	// 　vn_old0      変換される文字列　の入っている変数名
+	// 　vn_vn_dummy0 変換後のダミー変数名　の入っている変数名
+	// de0は区切り文字集合
 	void addMARepRules( 
 		const Dataset ds0,
-		const std::string &orivn0,
-		const std::string &oldstrvn0,
-		const std::string &desvn0,
+		const std::string &vn_vn_ori0,
+		const std::string &vn_old0,
+		const std::string &vn_vn_dummy0,
 		const std::string &de0
 	)
 	{
 
 		using namespace std; 
 
-		vector <string> orivarvec;
-		vector <string> oldvec;
-		vector <string> desvarvec;
+		vector <string> vn_ori_vec;
+		vector <string> old_vec;
+		vector <string> vn_dummy_vec;
 
-		ds0.getStringVector( orivarvec, orivn0);
-		ds0.getStringVector( oldvec, oldstrvn0);
-		ds0.getStringVector( desvarvec, desvn0);
+		ds0.getStringVector( vn_ori_vec, vn_vn_ori0);
+		ds0.getStringVector( old_vec, vn_old0);
+		ds0.getStringVector( vn_dummy_vec, vn_vn_dummy0);
 
-		addMARepRules( orivarvec, oldvec, desvarvec, de0);
+		addMARepRules( vn_ori_vec, old_vec, vn_dummy_vec, de0);
 
 	}
-
 
 	// ds0というデータセットにルールを適用し、
 	// 結果として得られたデータセットを返す。
@@ -544,6 +599,7 @@ public:
 
 	}
 
+	// ルールの内容をstd::coutに出力する。	
 	void print( void)
 	{
 		for ( const auto &r0 : rulevec){
