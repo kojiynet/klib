@@ -1,31 +1,18 @@
 
 /*
 	
-	qa22a_02.cpp
+	kdataman_test01.cpp
+
+	kdataman.cppのテスト
+
+	→CSVファイルを簡略化する。
+
 	
-	cl compile options:
-	-EHsc -utf-8 -std:c++17
-	
-	愛知大学2022年度計量政治行政分析1
-	qa22a_01.Rの内容をC++で書いてみる。
-	MS Formsで得られたデータを、数値コードに置き換える。
+	cl compile command:
+	cl -EHsc -utf-8 -std:c++17 kdataman_test01.cpp 
 
-	入力ファイルは、UTF-8にした。
-	
-	※kstatでRecodeするものを書いた気がしたが、それはFrequencyTableをつくるときに数値範囲のためのものらしかった。
-
-	TODO:
-
-	☑結果の正確性を確認
-	　→確認できた。
-
-	☑Datasetと変数名を与える方法でもできるようにしたい。
-
-	☑コメントで説明を書く。
-	□ヘッダとして独立させる。
-	　※Lenovo側で。それからUbuntuで。
-	□exampleをつくっておく。
-	
+	before running this, we may need to do:
+	chcp65001
 
 */
 
@@ -42,7 +29,7 @@
 #include <k09/koutputfile01.cpp>
 #include <k09/kdataset03.cpp>
 #include <k09/kstr00.cpp>
-#include "kdataman00.cpp"
+#include <k09/kdataman00.cpp>
 
 
 /* ********** Namespace Declarations/Directives ********** */
@@ -74,10 +61,11 @@ int main( int argc, char *argv[])
 	
 	using namespace std;
 	
-	const string fn_input = "qa22a_02_input.csv";
-	const string fn_codes_sa = "qa22a_02_codes_sa.csv";
-	const string fn_codes_ma = "qa22a_02_codes_ma.csv";
-	const string fn_output = "qa22a_02_out.txt";
+	const string fn_input    = "kdataman_test01_input.csv";
+	const string fn_codes_sa = "kdataman_test01_sacodes.csv";
+	const string fn_codes_ma = "kdataman_test01_macodes.csv";
+	const string fn_output   = "kdataman_test01_out1.txt";
+	const string fn_output2  = "kdataman_test01_out2.txt";
 
 	Dataset ds_input;
 	Dataset ds_codes_sa;
@@ -106,7 +94,8 @@ int main( int argc, char *argv[])
 
 
 	// ********************
-	// SAとMAをまとめて変換する
+	// コード対応のファイルから、vectorをとってきて、
+	// それをオブジェクトに与えていく方法
 
 	// SAコード変換ルールのファイルから情報を読む
 
@@ -161,7 +150,7 @@ int main( int argc, char *argv[])
 
 
 	// ********************
-	// Datasetから直接ルールを生成しようとしてみる
+	// Datasetから直接ルールを生成する方法
 
 	RepRuleSet reprules_test;
 
@@ -188,16 +177,15 @@ int main( int argc, char *argv[])
 	reprules_test.print();
 
 	// ルールの適用
-	Dataset ds_output_test = reprules_test.apply( ds_input);
+	Dataset ds_output2 = reprules_test.apply( ds_input);
 
 	// 結果の表示
-	ds_output_test.print();
+	ds_output2.print();
 
 	// ファイルに出力
-	const string fn_output_test = "qa22a_02_out_test.txt";
-	koutputfile kof_test( fn_output_test);
-	kof_test.open( false, false, true);
-	ds_output_test.writeFile( kof_test, "\t");
+	koutputfile kof2( fn_output2);
+	kof2.open( false, false, true);
+	ds_output2.writeFile( kof2, "\t");
 
 	return 0;
 
