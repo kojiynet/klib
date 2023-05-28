@@ -4,7 +4,7 @@
 	Ver. k09.03
 	
 	Written by Koji Yamamoto
-	Copyright (C) 2015-2022 Koji Yamamoto
+	Copyright (C) 2015-2023 Koji Yamamoto
 	In using this, please read the document which states terms of use.
 	
 	Module for Statistical Computations
@@ -12,11 +12,13 @@
 	k10になるときに以下の関数を消す。
 	double unbiasedVar()　→kstatboostのものを推奨。
 	double boostMean( const std::vector <double> &dv0)
-	
-	Note:
-	As for FreqType, possibly in the future we should refer the following libraries:
-	　GSL's Histogram
-	
+
+	■検討課題？
+	・今のRecodeTableには、左端・右端がない（無限大）という指定ができない。
+	・FreqTypeにはすごく小さい機能だけを持たせることにして、
+	　別にFreqTableTypeか何かをつくって、そこに、RecodeTableを持たせたり、
+	　それをもとにしたFreqを作らせたりしてもよいかも。
+
 */
 
 
